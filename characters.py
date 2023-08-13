@@ -143,7 +143,7 @@ class Characters:
         """
         for char_id in self.chars:
             self.update(char_id)
-        devmsg('updated whole db')
+        # devmsg('updated whole db')
 
     def update(self, character_id):
         """
@@ -151,7 +151,7 @@ class Characters:
         :param character_id: id of the character
         :return: None
         """
-        devmsg('start')
+        # devmsg('start')
         cursor = self.dbh.cursor()
         c = self.chars[character_id]
         query = f"""replace into characters (
@@ -192,7 +192,7 @@ class Characters:
         # devmsg(f'lastrowid: {cursor.lastrowid}')
         cursor.close()
         self.dbh.commit()
-        devmsg('ended')
+        # devmsg('ended')
 
     def online(self, user_id: int = None, status: int = None, alignment: str = None):
         """
