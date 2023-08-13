@@ -167,17 +167,13 @@ class IdleRPG(discord.Client):
             await message.channel.send('got your test')
             # await message.reply('Yeah, got your test', mention_author=True)
         else:
+            char = self.characters.find(message.author)
             if message.channel.name == 'idlerpg':
-                # TODO: Penalize player
-                character_id = message.author.id
-                name = message.author.global_name
-                if name is None:
-                    name = message.author.name
                 devmsg(message)
                 devmsg(message.content)
-                pen = self.penalize(character_id, 'message', len(message.content))
+                pen = self.penalize(char.id, 'message', len(message.content))
                 dur = self.duration(pen)
-                await self.gamechan.send(f"Penalty of {dur} added to <@{character_id}>'s timer for a message.")
+                await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for a message.")
 
             if message.channel.name == 'bot-commands':
                 # TODO: implement bot commands, like !whoami
@@ -208,6 +204,9 @@ class IdleRPG(discord.Client):
                     return
                 elif message.content == '!hog' and message.author.get_role(845357384040972338):
                     await self.hand_of_god()
+                    return
+                elif message.content == '!whoami':
+                    await message.reply(char.whoami())
                     return
 
                 elif message.content.startswith('!'):
@@ -307,15 +306,14 @@ class IdleRPG(discord.Client):
         if name is None:
             name = member_before.name
         character = self.characters.find(member_before)
-        mention = f"<@{character.id}>"
         username = character.username
-        devmsg(f'character: {character!r}')
-        devmsg(f'Member "{name}" updated presence')
-        if member_before.status != member_after.status:
+        # devmsg(f'character: {character!r}')
+        devmsg(f'Member "{username}" updated presence')
+        if member_before.raw_status != member_after.raw_status:
             bef = member_before.raw_status
             aft = member_after.raw_status
-            devmsg(f'before status: {bef}')
-            devmsg(f'after  status: {aft}')
+            # devmsg(f'before status: {bef}')
+            # devmsg(f'after  status: {aft}')
             if bef == 'offline':
                 self.characters.chars[character.id].online = 1
                 self.characters.update(character.id)
@@ -613,15 +611,17 @@ class IdleRPG(discord.Client):
 
     async def topx(self, count=5):
         chars = self.characters.topx(count)
-        await self.gamechan.send(f'Idle RPG Top {count} Players:')
+        lines = [f'Idle RPG Top {count} Players:']
         x = 1
         for char in chars:
             dur = self.duration(char.next_ttl)
             # devmsg(f"{char.username}, the {char.charclass}, is #{x}! Next level in {dur}.")
             level = char.level
             charclass = char.charclass
-            await self.gamechan.send(f"{char.username}, the level {level} {charclass}, is #{x}! Next level in {dur}.")
+            #await self.gamechan.send(f"{char.username}, the level {level} {charclass}, is #{x}! Next level in {dur}.")
+            lines.append(f"{char.username}, the level {level} {charclass}, is #{x}! Next level in {dur}.")
             x += 1
+        await self.gamechan.send('\n'.join(lines))
 
     def penalize(self, character_id, pen_type, *args) -> int:
         # get local copy of character
