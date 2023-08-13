@@ -36,6 +36,11 @@ class IdleRPG(discord.Client):
     gamechan = None    # This text channel object will be filled in via on_ready()
     bg_task = None     # This gets set to loop the main loop
 
+    # Server roles. Default to none, will load when the bot is connects
+    role_online = None
+    role_idle = None
+    role_dnd = None
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dbh = sqlite3.connect('irpg.db')
@@ -54,6 +59,45 @@ class IdleRPG(discord.Client):
         devmsg(f'Logged in as {self.user} {self.user!r}')
         # devmsg(f'guilds: {self.guilds}')
         for guild in self.guilds:
+            for role in guild.roles:
+                # No need for role_offline, it's handled
+                devmsg(f"Role: {role!r}")
+                if role.name == 'Idle':
+                    self.role_idle = role
+                elif role.name == 'Online':
+                    self.role_online = role
+                elif role.name == 'DND':
+                    self.role_dnd = role
+            if self.role_idle is None:
+                self.role_idle = await guild.create_role(
+                    name='Idle',
+                    color=discord.Colour.blue(),
+                    hoist=True,
+                    reason='Required for IdleRPG Game',
+                )
+            if self.role_online is None:
+                self.role_online = await guild.create_role(
+                    name='Online',
+                    color=discord.Colour.lighter_grey(),
+                    hoist=True,
+                    reason='Required for IdleRPG Game',
+                )
+            if self.role_dnd is None:
+                self.role_dnd = await guild.create_role(
+                    name='DND',
+                    color=discord.Colour.lighter_grey(),
+                    hoist=True,
+                    reason='Required for IdleRPG Game',
+                )
+            await guild.edit_role_positions(
+                reason='IdleRPG game logic',
+                positions={
+                    self.role_dnd: 0,
+                    self.role_online: 1,
+                    self.role_idle: 2,
+                }
+            )
+
             for chan in guild.text_channels:
                 if chan.name == 'idlerpg':
                     # devmsg(f'  chan: {chan!r}')
@@ -73,6 +117,13 @@ class IdleRPG(discord.Client):
                 # devmsg(f'char: {tmp!r}')
                 # devmsg(f"member status: '{member.status!r}' and online: {tmp.online}")
                 if member.raw_status == 'offline':
+                    await member.remove_roles(
+                        self.role_idle,
+                        self.role_online,
+                        self.role_dnd,
+                        reason="IdleRPG User is offline"
+                    )
+
                     if tmp.online == 1:
                         self.characters.chars[tmp.id].online = 0  # set them offline
                         self.characters.update(tmp.id)
@@ -80,6 +131,30 @@ class IdleRPG(discord.Client):
                     if tmp.online == 0:
                         self.characters.chars[tmp.id].online = 1  # set them online
                         self.characters.update(tmp.id)
+                    if member.raw_status == 'idle':
+                        await member.remove_roles(
+                            self.role_online, self.role_dnd,
+                            reason="IdleRPG Role Status Adjustment"
+                        )
+                        await member.add_roles(
+                            self.role_idle,
+                            reason="IdleRPG Role Status Adjustment")
+                    elif member.raw_status == 'online':
+                        await member.remove_roles(
+                            self.role_idle, self.role_dnd,
+                            reason="IdleRPG Role Status Adjustment"
+                        )
+                        await member.add_roles(
+                            self.role_online,
+                            reason="IdleRPG Role Status Adjustment")
+                    elif member.raw_status == 'dnd':
+                        await member.remove_roles(
+                            self.role_idle, self.role_online,
+                            reason="IdleRPG Role Status Adjustment"
+                        )
+                        await member.add_roles(
+                            self.role_dnd,
+                            reason="IdleRPG Role Status Adjustment")
 
         devmsg('Game starting!')
         self.lasttime = int(time.time())
