@@ -116,14 +116,8 @@ class IdleRPG(discord.Client):
                 tmp = self.characters.find(member)
                 # devmsg(f'char: {tmp!r}')
                 # devmsg(f"member status: '{member.status!r}' and online: {tmp.online}")
+                self.set_player_roles(member)
                 if member.raw_status == 'offline':
-                    await member.remove_roles(
-                        self.role_idle,
-                        self.role_online,
-                        self.role_dnd,
-                        reason="IdleRPG User is offline"
-                    )
-
                     if tmp.online == 1:
                         self.characters.chars[tmp.id].online = 0  # set them offline
                         self.characters.update(tmp.id)
@@ -131,30 +125,6 @@ class IdleRPG(discord.Client):
                     if tmp.online == 0:
                         self.characters.chars[tmp.id].online = 1  # set them online
                         self.characters.update(tmp.id)
-                    if member.raw_status == 'idle':
-                        await member.remove_roles(
-                            self.role_online, self.role_dnd,
-                            reason="IdleRPG Role Status Adjustment"
-                        )
-                        await member.add_roles(
-                            self.role_idle,
-                            reason="IdleRPG Role Status Adjustment")
-                    elif member.raw_status == 'online':
-                        await member.remove_roles(
-                            self.role_idle, self.role_dnd,
-                            reason="IdleRPG Role Status Adjustment"
-                        )
-                        await member.add_roles(
-                            self.role_online,
-                            reason="IdleRPG Role Status Adjustment")
-                    elif member.raw_status == 'dnd':
-                        await member.remove_roles(
-                            self.role_idle, self.role_online,
-                            reason="IdleRPG Role Status Adjustment"
-                        )
-                        await member.add_roles(
-                            self.role_dnd,
-                            reason="IdleRPG Role Status Adjustment")
 
         devmsg('Game starting!')
         self.lasttime = int(time.time())
@@ -267,6 +237,43 @@ class IdleRPG(discord.Client):
         dur = self.duration(pen)
         await self.gamechan.send(f"Penalty of {dur} added to {name}'s timer for deleting a message.")
 
+    async def set_player_roles(self, member):
+        """
+        Set the player's roles correctly
+        :param member: Member object
+        :return: None
+        """
+        if member.raw_status == 'idle':
+            await member.remove_roles(
+                self.role_online, self.role_dnd,
+                reason="IdleRPG Role Status Adjustment"
+            )
+            await member.add_roles(
+                self.role_idle,
+                reason="IdleRPG Role Status Adjustment")
+        elif member.raw_status == 'online':
+            await member.remove_roles(
+                self.role_idle, self.role_dnd,
+                reason="IdleRPG Role Status Adjustment"
+            )
+            await member.add_roles(
+                self.role_online,
+                reason="IdleRPG Role Status Adjustment")
+        elif member.raw_status == 'dnd':
+            await member.remove_roles(
+                self.role_idle, self.role_online,
+                reason="IdleRPG Role Status Adjustment"
+            )
+            await member.add_roles(
+                self.role_dnd,
+                reason="IdleRPG Role Status Adjustment")
+        else:
+            await member.remove_roles(
+                self.role_idle, self.role_online, self.role_dnd,
+                reason="IdleRPG Role Status Adjustment"
+            )
+
+
     async def on_reaction_add(self, reaction, user):
         devmsg(f'{user} added a reaction to {reaction.message}')
         # TODO: Penalize somehow
@@ -309,11 +316,10 @@ class IdleRPG(discord.Client):
         username = character.username
         # devmsg(f'character: {character!r}')
         devmsg(f'Member "{username}" updated presence')
+        self.set_player_roles(member_after)
         if member_before.raw_status != member_after.raw_status:
             bef = member_before.raw_status
             aft = member_after.raw_status
-            # devmsg(f'before status: {bef}')
-            # devmsg(f'after  status: {aft}')
             if bef == 'offline':
                 self.characters.chars[character.id].online = 1
                 self.characters.update(character.id)
@@ -323,8 +329,9 @@ class IdleRPG(discord.Client):
                 heshe = character.heshe(uppercase=1)
                 dur = self.duration(character.next_ttl)
                 await self.gamechan.send(f"{username}, the level {level} {charclass} is now online from **{guild}**. {heshe} reaches level {level + 1} in {dur}.")
-            elif aft == 'offline':
-                self.characters.chars[character.id].online = 0
+            else:
+                if aft == 'offline':
+                    self.characters.chars[character.id].online = 0
                 pen = self.penalize(character.id, 'status')
                 self.characters.update(character.id)
                 dur = self.duration(pen)
@@ -342,7 +349,6 @@ class IdleRPG(discord.Client):
 
         if character.online == 0:
             return
-        # TODO: Penalize
 
     async def on_connect(self):
         devmsg('connected')
