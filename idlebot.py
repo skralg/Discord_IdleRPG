@@ -115,6 +115,8 @@ class IdleRPG(discord.Client):
 
     async def on_message_edit(self, before, after):
         # devmsg(f'a message was edited from {before} to {after}')
+        if before.channel.name == 'idlerpg':
+            return
         old_length = len(before.content)
         new_length = len(after.content)
         difference = abs(old_length - new_length)
@@ -138,7 +140,6 @@ class IdleRPG(discord.Client):
     async def SKIPon_message_delete(self, message):
         # Skip if this isn't on the game channel
         if message.channel != self.gamechan:
-            # devmsg(f'ended: skipping message delete because this chan ({message.channel}) is not the gamechan ({self.gamechan})')
             return
         devmsg(f'a message was deleted: {message}')
         # Skip if it was someone deleting one of our messages
