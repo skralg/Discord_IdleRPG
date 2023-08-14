@@ -133,9 +133,6 @@ class IdleRPG(discord.Client):
     async def on_message(self, message):
         if message.author.id == self.user.id:
             return
-        if message.content.startswith('!test'):
-            await message.channel.send('got your test')
-            # await message.reply('Yeah, got your test', mention_author=True)
         else:
             char = self.characters.find(message.author)
             if message.channel.name == 'idlerpg':
@@ -148,6 +145,11 @@ class IdleRPG(discord.Client):
             if message.channel.name == 'bot-commands':
                 # TODO: implement bot commands, like !whoami
                 # TODO: refactor top5, as it's duplicated in rpcheck
+                if message.content == '!test_collision':
+                    char1 = self.characters.chars[122862594724855808]
+                    char2 = self.characters.chars[181563324599762944]
+                    await self.collision_fight(char1, char2)
+                    return
                 if message.content == '!top5':
                     await self.topx(5)
                     return
@@ -576,9 +578,81 @@ class IdleRPG(discord.Client):
         :return: None
         """
         devmsg('start')
-        await self.gamechan.send(f"TODO: Collision fight!")
-        p1roll, p1sum, p1showsum, p1showtxt = self.display_sums(char1, align=True, hero=False, pots=False)
-        p2roll, p2sum, p2showsum, p2showtxt = self.display_sums(char2, align=True, hero=False, pots=False)
+        # await self.gamechan.send(f"TODO: Collision fight!")
+        (p1roll, p1sum, p1showsum, p1showtxt) = self.display_sums(char1, align=True, hero=False, pots=False)
+        devmsg(f"{p1roll}, {p1sum}, {p1showsum}, {p1showtxt}")
+        (p2roll, p2sum, p2showsum, p2showtxt) = self.display_sums(char2, align=True, hero=False, pots=False)
+        devmsg(f"{p2roll}, {p2sum}, {p2showsum}, {p2showtxt}")
+        output_text = f"{p1showtxt} {p1showsum} has come upon {char2.username} {p2showsum}"
+        if p1roll >= p2roll:  # char1 won
+            gain = int(char2.level / 4)
+            if gain < 7:
+                gain = 7
+            gain = int((gain / 100) * char1.next_ttl)
+            char1.fightwon(gain)
+            char2.blost += 1
+            dur = self.duration(gain)
+            nl = self.nextlevel(char1)
+            # Convoluted logic that I wrote years ago in Perl...
+            if p1roll < 51 and p1sum > 299 and p2sum > 299:
+                output_text += " and won!"
+            elif p2roll + 300 < p1roll and p2sum > 299:
+                output_text += f" and straight stomped them in combat! {char2.username} cries!"
+            else:
+                battle_message = randint(0, 2)
+                if battle_message == 0:
+                    output_text += " and wins!"
+                elif battle_message == 1:
+                    output_text += " and rocked it!"
+                elif battle_message == 2:
+                    output_text += " and gave 'em what was coming!"
+            output_text += f"\n{dur} is removed from {char1.username}'s clock. {nl}"
+            await self.gamechan.send(output_text)
+            # Critical Strike chance if p1 rolled 85+% of max and p2 rolled 15-% theirs
+            if p1sum > 0 and p2sum > 0 and p1roll / p1sum >= .85 and p2roll / p2sum <= .15:
+                dice = await self.try_critical_strie(char1, char2)
+                if dice is False:
+                    await self.try_item_drop(char1, char2)
+        else:  # char2 won
+            gain = int(char2.level / 7)
+            if gain < 7:
+                gain = 7
+            gain = int((gain / 100) * char1.next_ttl)
+            self.fightlost(char1, gain)
+            char2.bwon += 1
+            dur = self.duration(gain)
+            nl = self.nextlevel(char1)
+            if p2roll < 51 and p1sum > 299 and p2sum > 299:
+                output_text += " and loses!"
+            elif p1roll + 300 < p2roll and p1sum > 299:
+                output_text += f" and brought bronze weapons to an iron fight! {char1.username} cries."
+            else:
+                battle_message = randint(0, 2)
+                if battle_message == 0:
+                    output_text += " and got flexed on in combat!"
+                elif battle_message == 1:
+                    output_text += " and realized it was a bad decision!"
+                elif battle_message == 2:
+                    output_text += " and didn't wake up till the next morning!"
+            output_text += f"\n{dur} is added to {char1.username}'s clock. {nl}"
+            await self.gamechan.send(output_text)
+            # Critical Strike chance if p2 rolled 85+% of max and p1 rolled 15-% theirs
+            if p1sum > 0 and p2sum > 0 and p1roll / p1sum <= .15 and p2roll / p2sum >= .85:
+                dice = await self.try_critical_strie(char2, char1)
+                if dice is False:
+                    await self.try_item_drop(char2, char1)
+        self.characters.update(char1)
+        self.characters.update(char2)
+        devmsg('ended')
+
+    def try_critical_strike(self, char1, char2):
+        devmsg('start')
+        self.gamechan.send("TODO: try critical strike!")
+        devmsg('ended')
+
+    def try_item_drop(self, char1, char2):
+        devmsg('start')
+        self.gamechan.send("TODO: Try Item Drop!")
         devmsg('ended')
 
     def display_sums(self, char, align: bool, hero: bool, pots: bool):
@@ -634,7 +708,7 @@ class IdleRPG(discord.Client):
                     char.luckload -= 1
                 # Copy back, save to db
                 self.characters.update(char)
-
+        return [int(roll), int(char_sum), output_sum, output_text]
 
 
     async def goodness(self):
@@ -718,7 +792,7 @@ class IdleRPG(discord.Client):
     def nextlevel(self, char):
         next_level = char.level + 1
         dur = self.duration(char.next_ttl)
-        return (f"{char.username} reaches level {next_level} in {dur}.")
+        return f"{char.username} reaches level {next_level} in {dur}."
 
     async def monster_hunt(self):
         devmsg('start')

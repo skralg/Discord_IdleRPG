@@ -137,6 +137,26 @@ class Character:
                 return 'Itself'
             return 'itself'
 
+    def fightwon(self, gain):
+        """
+        Call this when a fight is won
+        :param gain: ttl gained
+        :return: None
+        """
+        self.next_ttl -= gain
+        self.bminus += gain
+        self.bwon += 1
+
+    def fightlost(self, gain):
+        """
+        Call this when a fight is won
+        :param gain: ttl gained
+        :return: None
+        """
+        self.next_ttl += gain
+        self.badd += gain
+        self.blost += 1
+
     @staticmethod
     def duration(seconds):
         """
