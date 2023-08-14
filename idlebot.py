@@ -116,7 +116,7 @@ class IdleRPG(discord.Client):
                 tmp = self.characters.find(member)
                 # devmsg(f'char: {tmp!r}')
                 # devmsg(f"member status: '{member.status!r}' and online: {tmp.online}")
-                self.set_player_roles(member)
+                await self.set_player_roles(member)
                 if member.raw_status == 'offline':
                     if tmp.online == 1:
                         self.characters.chars[tmp.id].online = 0  # set them offline
@@ -174,6 +174,9 @@ class IdleRPG(discord.Client):
                     return
                 elif message.content == '!hog' and message.author.get_role(845357384040972338):
                     await self.hand_of_god()
+                    return
+                elif message.content == '!random_gold' and message.author.get_role(845357384040972338):
+                    await self.random_gold()
                     return
                 elif message.content == '!whoami':
                     await message.reply(char.whoami())
@@ -316,7 +319,7 @@ class IdleRPG(discord.Client):
         username = character.username
         # devmsg(f'character: {character!r}')
         devmsg(f'Member "{username}" updated presence')
-        self.set_player_roles(member_after)
+        await self.set_player_roles(member_after)
         if member_before.raw_status != member_after.raw_status:
             bef = member_before.raw_status
             aft = member_after.raw_status
@@ -530,7 +533,7 @@ class IdleRPG(discord.Client):
     async def moveplayers(self):
         # devmsg('start')
         # await self.gamechan.send(f"TODO: Move Players!")
-        #devmsg('ended')
+        # devmsg('ended')
         pass
 
     async def goodness(self):
@@ -555,7 +558,14 @@ class IdleRPG(discord.Client):
 
     async def random_gold(self):
         devmsg('start')
-        await self.gamechan.send(f"TODO: Random Gold!")
+        players = self.characters.online()
+        if players is None:
+            return
+        player = self.characters.chars[choice(players)]
+        gold_amount = randint(0, player.level) + 10
+        gold = player.addgold(gold_amount)
+        self.characters.update(player.id)
+        await self.gamechan.send(f"{player.username} just walked by {gold_amount} gold pieces and picked them up to sum {gold} total gold.")
         devmsg('ended')
 
     async def celebrity_fight(self):

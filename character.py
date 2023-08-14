@@ -40,6 +40,15 @@ class Character:
             f"Gold: {self.gold}"
         )
 
+    def addgold(self, amount):
+        """
+        Add arbitrary amount of gold to this character
+        :param amount: Amount of gold to add
+        :return: New gold amount on the character
+        """
+        self.gold += amount
+        return self.gold
+
     def itemsum(self):
         """
         Return character's sum of items
