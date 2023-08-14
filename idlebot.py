@@ -833,7 +833,7 @@ class IdleRPG(discord.Client):
             return pen
         elif pen_type == "message":
             length = args[0]
-            penalty_ttl = self.penttl(char.level, ignore_level=True)
+            penalty_ttl = math.pow(self.rppenstep, char.level)
             pen = int(length * penalty_ttl)
             if pen > self.limitpen:
                 pen = self.limitpen
