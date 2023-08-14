@@ -30,19 +30,19 @@ class Characters:
         devmsg(f"added character '{username}'")
         return char
 
-    def find(self, member):
+    def find(self, member=None, player_id=None):
         """
-        :param member: discord member object
-        :return: character record or None
+        :param member: Discord member object
+        :param player_id: player's id (same as Discord member id)
+        :return: character object (existing, or new if it didn't exist)
         """
-        # cursor = self.dbh.cursor()
-        # row = cursor.execute(f"select * from characters where id = {id}").fetchone()
-        # cursor.close()
-        # if row is None:
-        #     return None
-        # return row
-        if member.id in self.chars:
-            return self.chars[member.id]
+        if member is None and player_id is None:
+            devmsg('you must provide either member object or player id')
+            return
+        if player_id is None:
+            player_id = member.id
+        if player_id in self.chars:
+            return self.chars[player_id]
         # They don't exist, so we'll just add them right in against their will, possibly
         name = member.global_name
         if name is None:
@@ -50,7 +50,7 @@ class Characters:
         online = 1 if member.status == 'online' else 0
         now = str(int(time.time()))
         chardict = {
-            'id': member.id,
+            'id': player_id,
             'username': name,
             'password': '',
             'is_admin': 0,
@@ -58,7 +58,7 @@ class Characters:
             'charclass': 'IdleRPG Player',
             'next_ttl': 600, # rpbase
             'nick': name,
-            'userhost': member.id,
+            'userhost': player_id,
             'online': online,
             'idled': 0,
             'x_pos': 0,
@@ -113,7 +113,7 @@ class Characters:
             'rname': 'not set'
         }
         char = self.add(chardict)
-        self.update(member.id)
+        self.update(player_id)
         return char
 
     def load(self):
@@ -145,15 +145,13 @@ class Characters:
             self.update(char_id)
         # devmsg('updated whole db')
 
-    def update(self, character_id):
+    def update(self, c) -> None:
         """
-        Save a character back to the database
-        :param character_id: id of the character
+        Save a character object back to the database
+        :param c: Character object
         :return: None
         """
-        # devmsg('start')
         cursor = self.dbh.cursor()
-        c = self.chars[character_id]
         query = f"""replace into characters (
             password, is_admin,  level,    next_ttl, nick,     userhost,      online,     idled,     x_pos,     y_pos,     -- 10
             pen_msg,  pen_nick,  pen_part, pen_kick, pen_quit, pen_quest,     pen_logout, created,   lastlogin, amulet,    -- 20
@@ -185,14 +183,12 @@ class Characters:
                 c.sex,           c.age,        c.location,  c.email,     c.regentm,    # 45
                 c.challengetime, c.hero,       c.hlevel,    c.engineer,  c.englevel,   # 50
                 c.slaytime,      c.bet,        c.pot,       c.network,   c.bank,       # 55
-                c.team,          c.luckload,   c.powerload, character_id, c.username,  # 60
+                c.team,          c.luckload,   c.powerload, c.id,        c.username,   # 60
                 c.charclass                                                            # 61
             )
         )
-        # devmsg(f'lastrowid: {cursor.lastrowid}')
         cursor.close()
         self.dbh.commit()
-        # devmsg('ended')
 
     def online(self, user_id: int = None, status: int = None, alignment: str = None):
         """

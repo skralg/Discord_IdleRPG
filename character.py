@@ -49,14 +49,20 @@ class Character:
         self.gold += amount
         return self.gold
 
-    def itemsum(self):
+    def itemsum(self, align=False):
         """
         Return character's sum of items
         TODO: strip special item codes when implemented
+        :param align: Whether to consider alignment
         :return: int
         """
         item_sum = int(self.ring) + int(self.amulet) + int(self.charm) + int(self.weapon) + int(self.helm)
         item_sum += int(self.tunic) + int(self.gloves) + int(self.legs) + int(self.shield) + int(self.boots)
+        if align:
+            if self.alignment == 'e':
+                item_sum = int(item_sum * 0.9)
+            if self.alignment == 'g':
+                item_sum = int(item_sum * 1.1)
         return item_sum
 
     def heshe(self, uppercase=0):

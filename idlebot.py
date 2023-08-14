@@ -27,8 +27,8 @@ class IdleRPG(discord.Client):
     rppenstep = 1.6    # penalty time = penalty * (rppenstep ** level)
     limitpen = 604800  # penalty max limited to 1 week of seconds
     self_clock = 3     # how often to run the event loop
-    mapx = 1000        # custom size of map width
-    mapy = 1000        # custom size of map height
+    mapx = 50          # custom size of map width
+    mapy = 50          # custom size of map height
     rpreport = 0       # timestamp for reporting top players
     oldrpreport = 0    # previous value for reporting top players
     lasttime = 1       # last time that rpcheck() was run. Used for time diff to shave next_ttl
@@ -119,12 +119,12 @@ class IdleRPG(discord.Client):
                 await self.set_player_roles(member)
                 if member.raw_status == 'offline':
                     if tmp.online == 1:
-                        self.characters.chars[tmp.id].online = 0  # set them offline
-                        self.characters.update(tmp.id)
+                        tmp.online = 0  # set them offline
+                        self.characters.update(tmp)
                 else:
                     if tmp.online == 0:
-                        self.characters.chars[tmp.id].online = 1  # set them online
-                        self.characters.update(tmp.id)
+                        tmp.online = 1  # set them online
+                        self.characters.update(tmp)
 
         devmsg('Game starting!')
         self.lasttime = int(time.time())
@@ -141,7 +141,7 @@ class IdleRPG(discord.Client):
             if message.channel.name == 'idlerpg':
                 devmsg(message)
                 devmsg(message.content)
-                pen = self.penalize(char.id, 'message', len(message.content))
+                pen = self.penalize(char, 'message', len(message.content))
                 dur = self.duration(pen)
                 await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for a message.")
 
@@ -153,21 +153,21 @@ class IdleRPG(discord.Client):
                     return
                 elif message.content.startswith('!class '):
                     new_class = message.content.split(' ', 1)[1]
-                    self.characters.chars[message.author.id].charclass = new_class
-                    self.characters.update(message.author.id)
+                    char.charclass = new_class
+                    self.characters.update(char)
                     await message.reply(f"Your class was changed to '{new_class}'", mention_author=True)
                     return
                 elif message.content.startswith('!gender ') or message.content.startswith('!sex '):
                     new_gender = message.content.split(' ', 1)[1]
-                    self.characters.chars[message.author.id].sex = new_gender
-                    self.characters.update(message.author.id)
+                    char.sex = new_gender
+                    self.characters.update(char)
                     await message.reply(f"Your gender was changed to '{new_gender}'", mention_author=True)
                     return
                 elif message.content.startswith('!align '):
                     new_align = message.content.split(' ', 1)[1]
                     if new_align == 'g' or new_align == 'n' or new_align == 'e':
-                        self.characters.chars[message.author.id].alignment = new_align
-                        self.characters.update(message.author.id)
+                        char.alignment = new_align
+                        self.characters.update(char)
                         await message.reply(f"Your alignment was changed to '{new_align}'", mention_author=True)
                     else:
                         await message.reply(f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True)
@@ -190,20 +190,17 @@ class IdleRPG(discord.Client):
 
     async def on_message_edit(self, before, after):
         # devmsg(f'a message was edited from {before} to {after}')
-        if before.channel.name == 'idlerpg':
+        if before.channel.name != 'idlerpg':
             return
         old_length = len(before.content)
         new_length = len(after.content)
         difference = abs(old_length - new_length)
         if difference == 0:
             difference = 1
-        character_id = after.author.id
-        name = after.author.global_name
-        if name is None:
-            name = after.author.name
-        pen = self.penalize(character_id, 'message', difference)
+        char = self.characters.find(after.author)
+        pen = self.penalize(char, 'message', difference)
         dur = self.duration(pen)
-        await self.gamechan.send(f"Penalty of {dur} added to <@{character_id}>'s timer for editing a message.")
+        await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for editing a message.")
 
     # This could be helpful for message deletes eventually
     async def SKIPon_audit_log_entry_create(self, entry):
@@ -233,12 +230,10 @@ class IdleRPG(discord.Client):
         length = len(message.content)
         # devmsg(f"message content: {message.content} with length {length}")
         character_id = message.author.id
-        name = message.author.global_name
-        if name is None:
-            name = message.author.name
-        pen = self.penalize(character_id, 'message', length)
+        char = self.characters.find(message.author)
+        pen = self.penalize(char, 'message', length)
         dur = self.duration(pen)
-        await self.gamechan.send(f"Penalty of {dur} added to {name}'s timer for deleting a message.")
+        await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for deleting a message.")
 
     async def set_player_roles(self, member):
         """
@@ -315,42 +310,43 @@ class IdleRPG(discord.Client):
         name = member_before.global_name
         if name is None:
             name = member_before.name
-        character = self.characters.find(member_before)
-        username = character.username
-        # devmsg(f'character: {character!r}')
-        devmsg(f'Member "{username}" updated presence')
+        char = self.characters.find(member_after)
+        username = char.username
+        # devmsg(f'char: {character!r}')
+        # devmsg(f'Member "{username}" updated presence')
         await self.set_player_roles(member_after)
         if member_before.raw_status != member_after.raw_status:
             bef = member_before.raw_status
             aft = member_after.raw_status
             if bef == 'offline':
-                self.characters.chars[character.id].online = 1
-                self.characters.update(character.id)
-                level = character.level
-                charclass = character.charclass
+                char.online = 1
+                self.characters.update(char)
+                level = char.level
+                charclass = char.charclass
                 guild = member_before.guild.name
-                heshe = character.heshe(uppercase=1)
-                dur = self.duration(character.next_ttl)
+                heshe = char.heshe(uppercase=1)
+                dur = self.duration(char.next_ttl)
                 await self.gamechan.send(f"{username}, the level {level} {charclass} is now online from **{guild}**. {heshe} reaches level {level + 1} in {dur}.")
             else:
                 if aft == 'offline':
-                    self.characters.chars[character.id].online = 0
-                pen = self.penalize(character.id, 'status')
-                self.characters.update(character.id)
-                dur = self.duration(pen)
-                await self.gamechan.send(f"Penalty of {dur} added to {username}'s timer for status change of '{bef}' to '{aft}'.")
+                    char.online = 0
+                    pen = self.penalize(char, 'status')
+                    self.characters.update(char)
+                    dur = self.duration(pen)
+                    await self.gamechan.send(f"Penalty of {dur} added to {username}'s timer for going offline.")
 
         if member_before.activity != member_after.activity:
             bef = member_before.activity
             aft = member_after.activity
             devmsg(f'before activity: {bef!r}')
             devmsg(f'after  activity: {aft!r}')
-            pen = self.penalize(character.id, 'activity')
+            pen = self.penalize(char, 'activity')
+            self.characters.update(char)
             dur = self.duration(pen)
             devmsg(f"pen({pen}) dur({dur})")
             await self.gamechan.send(f"Penalty of {dur} added to {username}'s timer for activity change of '{bef}' to '{aft}'.")
 
-        if character.online == 0:
+        if char.online == 0:
             return
 
     async def on_connect(self):
@@ -473,10 +469,9 @@ class IdleRPG(discord.Client):
                 await self.find_gold(char_id)
                 await self.random_challenge(char_id)
                 await self.monster_attack_player(char_id)
-                self.characters.chars[char_id] = char
-                # self.characters.update(char_id)
+            self.characters.update(char)
 
-        self.characters.updatedb()
+        # self.characters.updatedb()
         self.oldrpreport = self.rpreport
         self.rpreport += curtime - self.lasttime
         self.lasttime = curtime
@@ -500,9 +495,9 @@ class IdleRPG(discord.Client):
         # await self.gamechan.send(f"TODO: Find Gold!")
         char = self.characters.chars[char_id]
         gold_amount = randint(0, char.level) + 6
-        self.characters.chars[char_id].gold += gold_amount
-        self.characters.update(char_id)
-        gold_total = self.characters.chars[char_id].gold
+        char.gold += gold_amount
+        self.characters.update(char)
+        gold_total = char.gold
         await self.gamechan.send(f"{char.username} found {gold_amount} gold pieces lying on the ground and picked them up to sum {gold_total} total gold.")
         devmsg('ended')
 
@@ -511,7 +506,7 @@ class IdleRPG(discord.Client):
         # await self.gamechan.send(f"TODO: Find Item!")
         devmsg('ended')
 
-    def base_ttl(self, level) -> int:
+    def base_ttl(self, level: int) -> int:
         """
         Calculates the base ttl for a character
         :param level: character level
@@ -532,9 +527,115 @@ class IdleRPG(discord.Client):
 
     async def moveplayers(self):
         # devmsg('start')
-        # await self.gamechan.send(f"TODO: Move Players!")
+        if self.lasttime <= 1:
+            return
+        online_player_ids = self.characters.online()
+        online_count = len(online_player_ids)
+        if online_count == 0:
+            return
+        positions = {}  # nested dict to hold player positions to detect collisions
+        # TODO: implement quest type 2
+        for player_id in online_player_ids:
+            char = self.characters.chars[player_id]
+            # devmsg(f'moving player {char.username}')
+            char.x_pos += randint(-1, 1)  # -1, 0, or 1
+            char.y_pos += randint(-1, 1)  # So doesn't move, or just 1 spot in any direction
+            if char.x_pos > self.mapx:
+                char.x_pos -= self.mapx
+            if char.y_pos > self.mapy:
+                char.y_pos -= self.mapy
+            if char.x_pos < 0:
+                char.x_pos += self.mapx
+            if char.y_pos < 0:
+                char.y_pos += self.mapy
+            self.characters.update(char)
+            # Here we implement collisions between players using nested dicts
+            x = char.x_pos
+            y = char.y_pos
+            if x not in positions:
+                positions[x] = {y: {'c': char, 'b': False}}  # c: character ref, b: indicate if battle happened
+            else:
+                if y not in positions[x]:
+                    positions[x][y] = {'c': char, 'b': False}
+                else:
+                    if positions[x][y]['b'] is False:
+                        # collision
+                        devmsg(f"collide: {char.username}, {positions[x][y]['c'].username}")
+                        positions[x][y]['b'] = True
+                        await self.collision_fight(char, positions[x][y]['c'])
+
+            # TODO: pick up items lying around irpg.pl#3697
+
         # devmsg('ended')
-        pass
+
+    async def collision_fight(self, char1, char2):
+        """
+        This happens when people on the map meet each other
+        :param char1: character object that moved to a spot
+        :param char2: character object that was already there
+        :return: None
+        """
+        devmsg('start')
+        await self.gamechan.send(f"TODO: Collision fight!")
+        p1roll, p1sum, p1showsum, p1showtxt = self.display_sums(char1, align=True, hero=False, pots=False)
+        p2roll, p2sum, p2showsum, p2showtxt = self.display_sums(char2, align=True, hero=False, pots=False)
+        devmsg('ended')
+
+    def display_sums(self, char, align: bool, hero: bool, pots: bool):
+        """
+        Generate some data needed for combat
+        :param char:  character object
+        :param align: consider alignment in sums
+        :param hero:  consider hero in sums
+        :param pots:  consider potions in sums
+        :return: list: int random combat roll, int sum, str roll result, str action taken
+        """
+        char_sum = char.itemsum(align=align)
+
+        roll = randint(1, char_sum) if char_sum > 0 else 0
+        output_text = f"{char.username}"
+        output_sum  = f"[{roll}/{char_sum}]"
+
+        factor = 0
+        attack_text = ""
+
+        if hero and char.hero == 1:
+            # add in hero display
+            hisher = char.hisher()
+            hlevel = char.hlevel
+            output_text += f', with {hisher} level {hlevel} **Hero**'
+            factor = (hlevel + 100 + 2) / 100  # 2% bonus per hero level, including level 0 hero
+            char_sum = int(char_sum * factor)
+            roll = int(roll * factor)
+            output_sum = f"[{roll}/{char_sum}]"
+        if pots:
+            # Power potion
+            if char.powerpots > 0 and char.powerload != 0:
+                output_text += ' plus a power-potion'
+                char_sum = int(char_sum * 1.1)
+                roll = int(roll * 1.1)
+                output_sum = f"[{roll}/{char_sum}]"
+                char.powerpots -= 1;
+                if char.powerload > 0:
+                    char.powerload -= 1
+                # Copy back, save to db
+                self.characters.update(char)
+            # Luck potion
+            if char.luckpots > 0 and char.luckload != 0:
+                # Add in a luck potion (5% to 10% to roll, but not to sum)
+                output_text += ' plus a luck-potion'
+                luck = char_sum * randint(5, 10) / 100
+                roll += luck;
+                if roll > char_sum:  # don't go over max
+                    roll = char_sum
+                output_sum = f"[{roll}/{char_sum}]"
+                char.luckpots -= 1
+                if char.luckload > 0:
+                    char.luckload -= 1
+                # Copy back, save to db
+                self.characters.update(char)
+
+
 
     async def goodness(self):
         devmsg('start')
@@ -561,11 +662,11 @@ class IdleRPG(discord.Client):
         players = self.characters.online()
         if players is None:
             return
-        player = self.characters.chars[choice(players)]
-        gold_amount = randint(0, player.level) + 10
-        gold = player.addgold(gold_amount)
-        self.characters.update(player.id)
-        await self.gamechan.send(f"{player.username} just walked by {gold_amount} gold pieces and picked them up to sum {gold} total gold.")
+        char = self.characters.chars[choice(players)]
+        gold_amount = randint(0, char.level) + 10
+        gold = char.addgold(gold_amount)
+        self.characters.update(char)
+        await self.gamechan.send(f"{char.username} just walked by {gold_amount} gold pieces and picked them up to sum {gold} total gold.")
         devmsg('ended')
 
     async def celebrity_fight(self):
@@ -600,22 +701,21 @@ class IdleRPG(discord.Client):
         player = choice(players)
         char = self.characters.chars[player]
         win = randint(0, 4)
-        bonus = int( randint(4, 75) / 100 * char.next_ttl)
+        bonus = int(randint(4, 75) / 100 * char.next_ttl)
         dur = self.duration(bonus)
         nl = char.level + 1
         if win:
-            self.characters.chars[player].next_ttl -= bonus
-            nextlevel = self.nextlevel(player)
+            char.next_ttl -= bonus
+            nextlevel = self.nextlevel(char)
             await self.gamechan.send(f"Verily I say unto thee, the Heavens have burst forth, and the blessed hand of God carried {char.username} {dur} forward. {nextlevel}")
         else:
-            self.characters.chars[player].next_ttl += bonus
-            nextlevel = self.nextlevel(player)
+            char.next_ttl += bonus
+            nextlevel = self.nextlevel(char)
             await self.gamechan.send(f"Thereupon He stretched out His little finger among them and consumed {char.username} with fire, slowing the heathen by {dur}. {nextlevel}")
-        self.characters.update(player)
+        self.characters.update(char)
         devmsg('ended')
 
-    def nextlevel(self, char_id):
-        char = self.characters.chars[char_id]
+    def nextlevel(self, char):
         next_level = char.level + 1
         dur = self.duration(char.next_ttl)
         return (f"{char.username} reaches level {next_level} in {dur}.")
@@ -631,47 +731,44 @@ class IdleRPG(discord.Client):
         x = 1
         for char in chars:
             dur = self.duration(char.next_ttl)
-            # devmsg(f"{char.username}, the {char.charclass}, is #{x}! Next level in {dur}.")
             level = char.level
             charclass = char.charclass
-            #await self.gamechan.send(f"{char.username}, the level {level} {charclass}, is #{x}! Next level in {dur}.")
             lines.append(f"{char.username}, the level {level} {charclass}, is #{x}! Next level in {dur}.")
             x += 1
         await self.gamechan.send('\n'.join(lines))
 
-    def penalize(self, character_id, pen_type, *args) -> int:
+    def penalize(self, char, pen_type: str, *args) -> int:
+        """
+        Penalize a character for non-idle activities
+        :param char: Character object
+        :param pen_type: penalty type
+        :param args: Various other args some types need
+        :return: count of seconds penalized
+        """
         # get local copy of character
-        character = self.characters.chars[character_id]
-        penalty_ttl = self.penttl(character.level)
+        penalty_ttl = self.penttl(char.level)
         if pen_type == "status" or pen_type == "activity":
-            devmsg(f"{character} gets '{pen_type}' penalty")
+            # devmsg(f"{character} gets '{pen_type}' penalty")
             pen = int(30 * penalty_ttl / self.rpbase)
             if pen > self.limitpen:
                 pen = self.limitpen
-            devmsg(f'pen: {pen}')
             # TODO: pen_nick is legacy from IRC. Make new counters for pen_status and pen_activity
-            character.pen_nick += pen
-            character.next_ttl += pen
-            # copy local character back to the global character list
-            self.characters.chars[character_id] = character
-            # tell it to update itself in the db
-            self.characters.update(character_id)
+            char.pen_nick += pen
+            char.next_ttl += pen
+            self.characters.update(char)
             return pen
         elif pen_type == "message":
             length = args[0]
-            penalty_ttl = self.penttl(character.level, ignore_level=True)
+            penalty_ttl = self.penttl(char.level, ignore_level=True)
             pen = int(length * penalty_ttl)
             if pen > self.limitpen:
                 pen = self.limitpen
-            character.pen_msg += pen
-            character.next_ttl += pen
-            # copy local character back to the global character list
-            self.characters.chars[character_id] = character
-            # tell it to update itself in the db
-            self.characters.update(character_id)
+            char.pen_msg += pen
+            char.next_ttl += pen
+            self.characters.update(char)
             return pen
         else:
-            devmsg(f"{character} gets an unhandled '{pen_type}' penalty")
+            devmsg(f"{char.username} gets an unhandled '{pen_type}' penalty")
             return 600
 
     def penttl(self, level, ignore_level=False):
@@ -681,7 +778,7 @@ class IdleRPG(discord.Client):
         :param ignore_level: choose to ignore level 60 adjustment
         :return: amount of seconds to penalize
         """
-        if level <= 60 or ignore_level == True:
+        if level <= 60 or ignore_level is True:
             return self.rpbase * math.pow(self.rppenstep, level)
         else:
             return (self.rpbase * math.pow(self.rppenstep, 60)) + (86400 * (level - 60))
