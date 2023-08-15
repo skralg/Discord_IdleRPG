@@ -65,7 +65,7 @@ class Character:
                 item_sum = int(item_sum * 1.1)
         return item_sum
 
-    def heshe(self, uppercase=0):
+    def heshe(self, uppercase: bool = 0):
         if self.sex == 'male':
             if uppercase:
                 return 'He'
@@ -83,7 +83,7 @@ class Character:
                 return 'It'
             return 'it'
 
-    def hisher(self, uppercase=0):
+    def hisher(self, uppercase: bool = 0):
         if self.sex == 'male':
             if uppercase:
                 return 'His'
@@ -101,7 +101,7 @@ class Character:
                 return 'Its'
             return 'its'
 
-    def himher(self, uppercase=0):
+    def himher(self, uppercase: bool = 0):
         if self.sex == 'male':
             if uppercase:
                 return 'Him'
@@ -119,7 +119,7 @@ class Character:
                 return 'It'
             return 'it'
 
-    def himselfherself(self, uppercase=0):
+    def himselfherself(self, uppercase: bool = 0):
         if self.sex == 'male':
             if uppercase:
                 return 'Himself'
@@ -156,6 +156,23 @@ class Character:
         self.next_ttl += gain
         self.badd += gain
         self.blost += 1
+
+    def get_item(self, item_type: str) -> str:
+        """
+        Get the level of a character's item
+        :param item_type: the item type, amulet, shield...
+        :return: string representing the item value
+        """
+        return getattr(self, item_type)
+
+    def set_item(self, item_type: str, item_level: str) -> str:
+        """
+        Get the level of a character's item
+        :param item_type: the item type, amulet, shield...
+        :param item_level: the string description of the level (a2b, 12, etc.)
+        :return: string representing the item value
+        """
+        return setattr(self, item_type, item_level)
 
     @staticmethod
     def duration(seconds):

@@ -41,6 +41,9 @@ class IdleRPG(discord.Client):
     role_idle = None
     role_dnd = None
 
+    # Items on the map. Dict of dicts of a list of dicts. It really does make sense.
+    map_items = {}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dbh = sqlite3.connect('irpg.db')
@@ -141,18 +144,36 @@ class IdleRPG(discord.Client):
                 pen = self.penalize(char, 'message', len(message.content))
                 dur = self.duration(pen)
                 await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for a message.")
+                return
 
-            if message.channel.name == 'bot-commands':
-                # TODO: implement bot commands, like !whoami
-                # TODO: refactor top5, as it's duplicated in rpcheck
-                if message.content == '!test_collision':
-                    char1 = self.characters.chars[122862594724855808]
-                    char2 = self.characters.chars[181563324599762944]
-                    await self.collision_fight(char1, char2)
-                    return
-                if message.content == '!top5':
-                    await self.topx(5)
-                    return
+            elif message.channel.name == 'bot-commands':
+                # implement bot commands, like !whoami
+
+                ##################
+                # Admin commands #
+                ##################
+                if char.is_admin != 0:
+                    if message.content == '!test_itemdrop':
+                        simple = self.characters.chars[181563324599762944]
+                        await self.find_item(simple)
+                        return
+                    elif message.content == '!test_collision':
+                        simple = self.characters.chars[181563324599762944]
+                        seiyria = self.characters.chars[122862594724855808]
+                        await self.collision_fight(simple, seiyria)
+                        return
+                    elif message.content == '!top5':
+                        await self.topx(5)
+                        return
+                    elif message.content == '!hog':
+                        await self.hand_of_god()
+                        return
+                    elif message.content == '!random_gold':
+                        await self.random_gold()
+                        return
+                ###################
+                # Member commands #
+                ###################
                 elif message.content.startswith('!class '):
                     new_class = message.content.split(' ', 1)[1]
                     char.charclass = new_class
@@ -173,12 +194,6 @@ class IdleRPG(discord.Client):
                         await message.reply(f"Your alignment was changed to '{new_align}'", mention_author=True)
                     else:
                         await message.reply(f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True)
-                    return
-                elif message.content == '!hog' and message.author.get_role(845357384040972338):
-                    await self.hand_of_god()
-                    return
-                elif message.content == '!random_gold' and message.author.get_role(845357384040972338):
-                    await self.random_gold()
                     return
                 elif message.content == '!whoami':
                     await message.reply(char.whoami())
@@ -467,10 +482,10 @@ class IdleRPG(discord.Client):
                 devmsg(f"heshe: {heshe}")
                 dur = self.duration(base_ttl)
                 await self.gamechan.send(f"{char.username}, {char.charclass}, has attained level {char.level}! {heshe} reaches level {nextlevel} in {dur}.")
-                await self.find_item(char_id)
-                await self.find_gold(char_id)
-                await self.random_challenge(char_id)
-                await self.monster_attack_player(char_id)
+                await self.find_item(char)
+                await self.find_gold(char)
+                await self.random_challenge(char)
+                await self.monster_attack_player(char)
             self.characters.update(char)
 
         # self.characters.updatedb()
@@ -482,20 +497,19 @@ class IdleRPG(discord.Client):
         # TODO: irpg.pl:2720
         # devmsg('ended')
 
-    async def monster_attack_player(self, char_id):
+    async def monster_attack_player(self, char):
         devmsg('start')
         # await self.gamechan.send(f"TODO: Monster Attack Player!")
         devmsg('ended')
 
-    async def random_challenge(self, char_id):
+    async def random_challenge(self, char):
         devmsg('start')
         # await self.gamechan.send(f"TODO: Random Challenge!")
         devmsg('ended')
 
-    async def find_gold(self, char_id):
+    async def find_gold(self, char):
         devmsg('start')
         # await self.gamechan.send(f"TODO: Find Gold!")
-        char = self.characters.chars[char_id]
         gold_amount = randint(0, char.level) + 6
         char.gold += gold_amount
         self.characters.update(char)
@@ -503,10 +517,144 @@ class IdleRPG(discord.Client):
         await self.gamechan.send(f"{char.username} found {gold_amount} gold pieces lying on the ground and picked them up to sum {gold_total} total gold.")
         devmsg('ended')
 
-    async def find_item(self, char_id):
+    async def find_item(self, char):
+        """
+        character finds a random item
+        :param char: character
+        :return: None
+        """
         devmsg('start')
         # await self.gamechan.send(f"TODO: Find Item!")
+        item_type = choice(
+            ['ring', 'amulet', 'charm', 'weapon', 'helm', 'tunic', 'gloves', 'legs', 'shield', 'boots']
+        )
+        curr_level = char.get_item(item_type)
+        HeShe = char.heshe(True)
+        himher = char.himher()
+        hisher = char.hisher()
+        HisHer = char.hisher(True)
+        raw_item = self.get_unique_item(char.level)
+        if self.item_level(raw_item) == 0:
+            # Random plain item
+            if char.level > 50:
+                item_level = char.level - 25 + randint(0, int(char.level / 2) + 25)
+            else:
+                min_level = randint(1, int(char.level / 2))
+                max_level = min_level + randint(0, int(char.level * 1.5))
+                item_level = str(randint(min_level, min_level + max_level))
+            curr_item = self.format_named_item(curr_level, item_type)
+            new_item = self.format_named_item(item_level, item_type)
+            output = f"{char.username} found a {new_item}"
+            if self.item_level(item_level) > self.item_level(curr_level):
+                # It is better
+                output += f"! {HisHer} current {item_type} was level {curr_level}, so it seems Luck is with {himher}!"
+                self.drop_item(char, item_type, curr_level)
+                char.set_item(item_type, item_level)
+            else:
+                # Worse, or same, drop it
+                action = f"{HeShe} drops it on the ground."
+                if char.engineer:
+                    action = f"{HeShe} gives it to {hisher} Engineer."
+                output += f", but it wasn't better than {hisher} {curr_item}. {action}"
+                # TODO: engineer_item: irpg.pl:3440
+                self.drop_item(char, item_type, item_level)  # TODO: unless engineer!!
+            await self.gamechan.send(output)
+        else:
+            # Unique item
+            # TODO: unique items, irpg.pl:3445
+            pass
+
+        self.characters.update(char)
         devmsg('ended')
+
+    def drop_item(self, char, item_type: str, item_level: str):
+        """
+        Drop an item on the map. This is where our dict of dicts of lists of dicts comes into play.
+        :param char: object, character
+        :param item_type: string, type of item
+        :param item_level: string, describing item attributes
+        :return: None
+        """
+        level = self.item_level(item_level)
+        if level == 0:
+            return
+        x = char.x_pos
+        y = char.y_pos
+        map_item = {
+            'type': item_type,
+            'level': item_level,
+            'last': time.time(),
+        }
+        if x in self.map_items:                         # Dict 1, x coord
+            if y in self.map_items[x]:                  # Dict 2, y coord
+                self.map_items[x][y].append(map_item)   # List of Dict 3s
+            else:
+                self.map_items[x][y] = [map_item]
+        else:
+            self.map_items[x] = {y: [map_item]}
+
+    def format_named_item(self, item: str, item_type: str) -> str:
+        """
+        Format an item of a type
+        :param item: string like '5' or 'a5' or '5a' or 'a5a'
+        :param item_type: ring, amulet, etc.
+        :return: formatted string describing the item
+        """
+        prefix, level, suffix = self.item_parse(item)
+        devmsg(f"prefix({prefix}) level({level}) suffix({suffix})")
+        name_item = f"level {level} "
+        # TODO: Add affixes
+        name_item += item_type
+        return name_item
+
+    @staticmethod
+    def item_parse(item: str):
+        """
+        Split prefix, level, and suffix from raw item string
+        :param item: string, item description
+        :return: list of 1 char, 1 integer, 1 char
+        """
+        prefix = ''
+        level = ''
+        suffix = ''
+        digits = '0123456789'
+        alphas = 'abcdefghijklmnopqrstuvwxyz'
+        stage = 0  # 0: prefix, 1: level, 2: suffix
+        for x in item:
+            if stage == 0 and x in alphas:
+                prefix = x
+                stage = 1
+                continue
+            elif stage == 0 and x in digits:
+                level += x
+                stage = 1
+                continue
+            elif stage == 1 and x in digits:
+                level += x
+                continue
+            elif stage == 1 and x in alphas:
+                suffix = x
+                stage = 2
+        return [prefix, level, suffix]
+
+    @staticmethod
+    def item_level(item: str) -> int:
+        """
+        Strip 'unique' data from an item, returning just the level
+        :param item: item string
+        :return: integer level
+        """
+        return int(
+            item.translate(
+                {ord(letter): None for letter in 'abcdefghijklmnopqrstuvwxyz'}
+            )
+        )
+
+    def get_unique_item(self, level: int) -> str:
+        devmsg('start')
+        devmsg('TODO: Generate unique items!')
+        devmsg('ended')
+        return '0'
 
     def base_ttl(self, level: int) -> int:
         """
@@ -577,8 +725,7 @@ class IdleRPG(discord.Client):
         :param char2: character object that was already there
         :return: None
         """
-        devmsg('start')
-        # await self.gamechan.send(f"TODO: Collision fight!")
+        # devmsg('start')
         (p1roll, p1sum, p1showsum, p1showtxt) = self.display_sums(char1, align=True, hero=False, pots=False)
         devmsg(f"{p1roll}, {p1sum}, {p1showsum}, {p1showtxt}")
         (p2roll, p2sum, p2showsum, p2showtxt) = self.display_sums(char2, align=True, hero=False, pots=False)
@@ -643,7 +790,7 @@ class IdleRPG(discord.Client):
                     await self.try_item_drop(char2, char1)
         self.characters.update(char1)
         self.characters.update(char2)
-        devmsg('ended')
+        # devmsg('ended')
 
     def try_critical_strike(self, char1, char2):
         devmsg('start')

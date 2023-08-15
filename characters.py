@@ -145,6 +145,49 @@ class Characters:
             self.update(char_id)
         # devmsg('updated whole db')
 
+    def zero(self):
+        for char in self.chars.values():
+            char.level = 0
+            char.next_ttl = 600
+            char.idled = 0
+            char.pen_msg = 0
+            char.pen_nick = 0
+            char.pen_part = 0
+            char.pen_kick = 0
+            char.pen_quit = 0
+            char.pen_quest = 0
+            char.pen_logout = 0
+            char.amulet = '0'
+            char.charm = '0'
+            char.helm = '0'
+            char.boots = '0'
+            char.gloves = '0'
+            char.ring = '0'
+            char.legs = '0'
+            char.shield = '0'
+            char.tunic = '0'
+            char.weapon = '0'
+            char.powerpots = 0
+            char.luckpots = 0
+            char.alignment = 'n'
+            char.gold = 0
+            char.ffight = 0
+            char.bwon = 0
+            char.blost = 0
+            char.badd = 0
+            char.bminus = 0
+            char.regentm = 0
+            char.challengetime = 0
+            char.hero = 0
+            char.hlevel = 0
+            char.engineer = 0
+            char.englevel = 0
+            char.slaytime = 0
+            char.bet = 0
+            char.pot = 0
+            char.bank = 0
+            self.update(char)
+
     def update(self, c) -> None:
         """
         Save a character object back to the database
