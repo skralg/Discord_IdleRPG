@@ -27,7 +27,6 @@ class Characters:
             raise Exception(f"Character '{username}' already exists!")
         char = character.Character(char_data)
         self.chars[char_id] = char
-        devmsg(f"added character '{username}'")
         return char
 
     def find(self, member=None, player_id=None):

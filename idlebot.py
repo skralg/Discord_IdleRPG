@@ -153,7 +153,10 @@ class IdleRPG(discord.Client):
                 # Admin commands #
                 ##################
                 if char.is_admin != 0:
-                    if message.content == '!test_itemdrop':
+                    if message.content == '!test_celeb':
+                        await self.celebrity_fight()
+                        return
+                    elif message.content == '!test_itemdrop':
                         simple = self.characters.chars[181563324599762944]
                         await self.find_item(simple)
                         return
@@ -171,6 +174,14 @@ class IdleRPG(discord.Client):
                     elif message.content == '!random_gold':
                         await self.random_gold()
                         return
+                    elif message.content == '!reset':
+                        # TODO: reset quest once quest implemented
+                        # TODO: reset tournament if implemented and one is running
+                        # TODO: clear team stats, once implemented
+                        self.characters.zero()
+                        await self.gamechan.send("** Game Reset! **")
+                        return
+
                 ###################
                 # Member commands #
                 ###################
@@ -312,12 +323,14 @@ class IdleRPG(discord.Client):
         # TODO: log out player, keep in db, they could play elsewhere
 
     async def on_member_update(self, before, after):
-        devmsg(f'member {before.name} updated profile')
+        # devmsg(f'member {before.name} updated profile')
         # TODO: Penalize
+        pass
 
     async def on_user_update(self, before, after):
-        devmsg(f'user {before.name} updated profile')
+        #devmsg(f'user {before.name} updated profile')
         # TODO: Penalize
+        pass
 
     async def on_member_ban(self, guild, user):
         devmsg(f'user {user} was banned from {guild}')
@@ -387,7 +400,10 @@ class IdleRPG(discord.Client):
         :return: None
         """
         # devmsg('start')
-        await self.rpcheck()
+        try:
+            await self.rpcheck()
+        except Exception as e:
+            devmsg(f"Exception: {e}")
 
         # Wait self_clock seconds and start mainloop() over
         # devmsg('sleeping')
@@ -447,7 +463,7 @@ class IdleRPG(discord.Client):
             # Show the Top 5 idlers
             await self.topx(5)
             # Announce the next tournament
-            await self.announce_next_tournament()
+            # TODO: await self.announce_next_tournament()
 
             # TODO: random_challenge, hourly, 15% of all players must be level 25+ irpg.pl:2643
 
@@ -536,21 +552,28 @@ class IdleRPG(discord.Client):
         raw_item = self.get_unique_item(char.level)
         if self.item_level(raw_item) == 0:
             # Random plain item
+            devmsg('random plain item')
             if char.level > 50:
                 item_level = char.level - 25 + randint(0, int(char.level / 2) + 25)
             else:
-                min_level = randint(1, int(char.level / 2))
+                half_level = int(char.level / 2)
+                if half_level < 1:
+                    half_level = 1
+                min_level = randint(1, half_level)
                 max_level = min_level + randint(0, int(char.level * 1.5))
                 item_level = str(randint(min_level, min_level + max_level))
+                devmsg(f'generated item level: {item_level}')
             curr_item = self.format_named_item(curr_level, item_type)
             new_item = self.format_named_item(item_level, item_type)
             output = f"{char.username} found a {new_item}"
             if self.item_level(item_level) > self.item_level(curr_level):
                 # It is better
+                devmsg('it is better')
                 output += f"! {HisHer} current {item_type} was level {curr_level}, so it seems Luck is with {himher}!"
                 self.drop_item(char, item_type, curr_level)
                 char.set_item(item_type, item_level)
             else:
+                devmsg('it is worse')
                 # Worse, or same, drop it
                 action = f"{HeShe} drops it on the ground."
                 if char.engineer:
@@ -562,7 +585,7 @@ class IdleRPG(discord.Client):
         else:
             # Unique item
             # TODO: unique items, irpg.pl:3445
-            pass
+            devmsg('unique item, please make me work')
 
         self.characters.update(char)
         devmsg('ended')
@@ -644,6 +667,7 @@ class IdleRPG(discord.Client):
         :param item: item string
         :return: integer level
         """
+        devmsg('start')
         return int(
             item.translate(
                 {ord(letter): None for letter in 'abcdefghijklmnopqrstuvwxyz'}
@@ -757,7 +781,7 @@ class IdleRPG(discord.Client):
             await self.gamechan.send(output_text)
             # Critical Strike chance if p1 rolled 85+% of max and p2 rolled 15-% theirs
             if p1sum > 0 and p2sum > 0 and p1roll / p1sum >= .85 and p2roll / p2sum <= .15:
-                dice = await self.try_critical_strie(char1, char2)
+                dice = await self.try_critical_strike(char1, char2)
                 if dice is False:
                     await self.try_item_drop(char1, char2)
         else:  # char2 won
@@ -765,7 +789,7 @@ class IdleRPG(discord.Client):
             if gain < 7:
                 gain = 7
             gain = int((gain / 100) * char1.next_ttl)
-            self.fightlost(char1, gain)
+            char1.fightlost(gain)
             char2.bwon += 1
             dur = self.duration(gain)
             nl = self.nextlevel(char1)
@@ -857,7 +881,6 @@ class IdleRPG(discord.Client):
                 self.characters.update(char)
         return [int(roll), int(char_sum), output_sum, output_text]
 
-
     async def goodness(self):
         devmsg('start')
         await self.gamechan.send(f"TODO: Random Goodness!")
@@ -891,8 +914,70 @@ class IdleRPG(discord.Client):
         devmsg('ended')
 
     async def celebrity_fight(self):
+        """
+        Pit a random player against a random fantasy celebrity
+        :return: None
+        """
         devmsg('start')
-        await self.gamechan.send(f"TODO: Celebrity Fight!")
+        players = self.characters.online()
+        if players is None:
+            return
+        char = self.characters.chars[choice(players)]
+        celebs = {
+            'Humpty Dumpty'         :  0,
+            'Tweedledee'            :  0,
+            'Tweedledum'            :  0,
+            'Cheshire Cat'          :  1,
+            'Oompa Loompa'          :  1,
+            'Bilbo Baggins'         :  2,
+            'Hermione Granger'      :  2,
+            'Princess Buttercup'    :  2,
+            'Frodo Baggins'         :  3,
+            'Samwise Gamgee'        :  3,
+            'Gollum'                :  4,
+            'Circe'                 :  4,
+            'Robin Hood'            :  5,
+            'Harry Potter'          :  5,
+            'Shrek'                 :  6,
+            'Princess Fiona'        :  6,
+            'Conan'                 :  7,
+            'Harry Dresden'         :  7,
+            'Captain Jack Sparrow'  :  7,
+            'Medusa'                :  8,
+            'King Arthur'           :  8,
+            'Joan of Arc'           :  8,
+            'Merlin'                :  9,
+            'Richard Rahl'          :  9,
+            'Van Helsing'           :  9,
+            'Saruman'               : 10,
+            'Belgarath'             : 10,
+            'Dread Pirate Roberts'  : 10,
+            'Severus Snape'         : 11,
+            "Zeddicus Zu'l Zorander": 11,
+            'Albus Dumbledore'      : 12,
+            'Lord Voldemort'        : 13,
+            'Gandalf the Grey'      : 15,
+            'Elminster'             : 15,
+        }
+        celeb = choice(list(celebs.keys()))
+        clevel = celebs[celeb]
+        devmsg(f"player({char}) celeb({celeb}) clevel({clevel})")
+        oppsum = 150 * (clevel + 1)
+        (p1roll, p1sum, p1showsum, p1showtxt) = self.display_sums(char, align=True, hero=False, pots=False)
+        opproll = randint(1, oppsum)
+        output = f"{p1showtxt} {p1showsum} fights with the legendary {celeb} [{opproll}/{oppsum}] and"
+        level = char.level
+        gain = int(oppsum * (level / 10))
+        dur = self.duration(gain)
+        nextlevel = self.nextlevel(char)
+        if p1roll >= opproll:
+            char.fightwon(gain)
+            char.addgold(10)
+            await self.gamechan.send(f"{output} wins! {dur} removed from {char.username}'s time and 10 gold added. {nextlevel}")
+        else:
+            char.fightlost(gain)
+            await self.gamechan.send(f"{output} lost! {dur} added to {char.username}'s time. {nextlevel}")
+        self.characters.update(char)
         devmsg('ended')
 
     async def godsend(self):
