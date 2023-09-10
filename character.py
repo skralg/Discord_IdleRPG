@@ -49,6 +49,14 @@ class Character:
         self.gold += amount
         return self.gold
 
+    def addttl(self, seconds) -> None:
+        """
+        Add (or remove if negative) some time to a character
+        :param seconds: integer count of seconds
+        :return: None
+        """
+        self.next_ttl += seconds
+
     def itemsum(self, align=False):
         """
         Return character's sum of items

@@ -156,6 +156,12 @@ class IdleRPG(discord.Client):
                     if message.content == '!test_celeb':
                         await self.celebrity_fight()
                         return
+                    elif message.content == '!godsend':
+                        await self.godsend()
+                        return
+                    elif message.content == '!monster_attack':
+                        await self.monster_attack()
+                        return
                     elif message.content == '!test_itemdrop':
                         simple = self.characters.chars[181563324599762944]
                         await self.find_item(simple)
@@ -513,10 +519,72 @@ class IdleRPG(discord.Client):
         # TODO: irpg.pl:2720
         # devmsg('ended')
 
-    async def monster_attack_player(self, char):
+    async def monster_attack(self) -> None:
+        """
+        Pit random player against a random monster
+        :return: None
+        """
+        devmsg('start')
+        players = self.characters.online()
+        if players is None:
+            return
+        char = self.characters.chars[choice(players)]
+        await self.monster_attack_player(char)
+        devmsg('ended')
+
+    async def monster_attack_player(self, char) -> None:
+        """
+        Pit specified player against a random monster
+        :param char: character
+        :return: None
+        """
         devmsg('start')
         # await self.gamechan.send(f"TODO: Monster Attack Player!")
+        (myroll, mysum, myshowsum, myshowtxt) = self.display_sums(char, align=True, hero=True, pots=True)
+        gain = 12  # Default gain of 12%
+        loss = 9   # Default loss of 9%
+        # Default monster sum
+        monster_sum = int((randint(0, 30) + 85) * mysum / 100)
+        if randint(1,5) == 1:
+            # Easy challenge, gain 7% lose 10%
+            monster_sum = int((randint(0,20) + 30) * mysum / 100)
+            gain = 7
+            loss = 10
+        elif randint(1, 5) == 1:
+            # Hard challenge, gain 22% lose 5%
+            monster_sum = int((randint(0, 20) + 150) * mysum / 100)
+            gain = 22
+            loss = 5
+
+        if monster_sum < 1:
+            monster_sum = 1
+        monster_name = self.get_monster_name(monster_sum)
+        monster_roll = randint(0, monster_sum)
+        output = f"{myshowtxt} {myshowsum} has been set upon by a {monster_name} [{monster_roll}/{monster_sum}]"
+        if myroll >= monster_roll:
+            gain = int( gain * char.next_ttl / 100)
+            char.fightwon(gain)
+            dur = self.duration(gain)
+            nextlevel = self.nextlevel(char)
+            await self.gamechan.send(f"{output} and won! {dur} is removed from {char.username}'s clock. {nextlevel}")
+        else:
+            loss = int( loss * char.next_ttl / 100)
+            char.fightlost(loss)
+            dur = self.duration(loss)
+            nextlevel = self.nextlevel(char)
+            await self.gamechan.send(f"{output} and lost! {dur} is added to {char.username}'s clock. {nextlevel}")
+        self.characters.update(char)
         devmsg('ended')
+
+    @staticmethod
+    def get_monster_name(monster_sum):
+        """
+        Get an appropriate monster name for the sum provided
+        :param monster_sum: monster sum
+        :return: monster name
+        """
+        # TODO: read an actual monster file!
+        return "GENERIC_MONSTER"
 
     async def random_challenge(self, char):
         devmsg('start')
@@ -525,7 +593,6 @@ class IdleRPG(discord.Client):
 
     async def find_gold(self, char):
         devmsg('start')
-        # await self.gamechan.send(f"TODO: Find Gold!")
         gold_amount = randint(0, char.level) + 6
         char.gold += gold_amount
         self.characters.update(char)
@@ -540,10 +607,7 @@ class IdleRPG(discord.Client):
         :return: None
         """
         devmsg('start')
-        # await self.gamechan.send(f"TODO: Find Item!")
-        item_type = choice(
-            ['ring', 'amulet', 'charm', 'weapon', 'helm', 'tunic', 'gloves', 'legs', 'shield', 'boots']
-        )
+        item_type = await self.random_item()
         curr_level = char.get_item(item_type)
         HeShe = char.heshe(True)
         himher = char.himher()
@@ -589,6 +653,13 @@ class IdleRPG(discord.Client):
 
         self.characters.update(char)
         devmsg('ended')
+
+    @staticmethod
+    async def random_item(self):
+        item_type = choice(
+            ['ring', 'amulet', 'charm', 'weapon', 'helm', 'tunic', 'gloves', 'legs', 'shield', 'boots']
+        )
+        return item_type
 
     def drop_item(self, char, item_type: str, item_level: str):
         """
@@ -896,11 +967,6 @@ class IdleRPG(discord.Client):
         await self.gamechan.send(f"TODO: Random Steal!")
         devmsg('ended')
 
-    async def monster_attack(self):
-        devmsg('start')
-        await self.gamechan.send(f"TODO: Monster Attack!")
-        devmsg('ended')
-
     async def random_gold(self):
         devmsg('start')
         players = self.characters.online()
@@ -980,9 +1046,60 @@ class IdleRPG(discord.Client):
         self.characters.update(char)
         devmsg('ended')
 
-    async def godsend(self):
+    async def godsend(self) -> None:
+        """
+        Bless the unworthy
+        :return: None
+        """
         devmsg('start')
-        await self.gamechan.send(f"TODO: Godsend!")
+        players = self.characters.online()
+        if players is None:
+            return
+        char = self.characters.chars[choice(players)]
+        name = char.username
+        # await self.gamechan.send(f"TODO: Godsend!")
+        if randint(1, 10) == 1:
+            type = self.random_item()
+            hisher = char.hisher()
+            HisHer = char.hisher(uppercase=True)
+            if type == 'ring':
+                output = f"Someone accidentally spilled some luck potion on {name}'s ring, and it gained 10% effectiveness."
+            elif type == 'amulet':
+                output = f"{name}'s amulet was blessed by a passing cleric! {HisHer} amulet gains 10% effectiveness."
+            elif type == 'charm':
+                output = f"{name}'s charm at a bolt of lightning! {HisHer} charm gains 10% effectiveness."
+            elif type == 'weapon':
+                output = f"{name} sharpened the edge of {hisher} weapon! {HisHer} weapon gains 10% effectiveness."
+            elif type == 'helm':
+                output = f"{name} beat the dents out of {hisher} helm! {HisHer} helm is not 10% stronger."
+            elif type == 'tunic':
+                output = f"A magician cast a spell of Rigidity on {name}'s tunic! {HisHer} tunic gains 10% effectiveness."
+            elif type == 'gloves':
+                output = f"{name} cleaned {hisher} gloves in the dishwasher. {HisHer} gloves gain 10% effectiveness."
+            elif type == 'legs':
+                output = f"The local wizard imbued {name}'s pants with a Spirit of Fortitude! {HisHer} pants gain 10% effectiveness."
+            elif type == 'shield':
+                output = f"{name} reinforced {hisher} shield with a dragon's scales! {HisHer} shidle gains 10% effectiveness."
+            elif type == 'boots':
+                output = f"{name} stepped in some unicorn poo. It was gross to clean up, but the boots are not 10% more effective."
+
+            rawitem = char.get_item(type)
+            prefix, level, suffix = self.item_parse(rawitem)
+            newlevel = int(level * 1.1)
+            char.set_item(type, f"{prefix}{newlevel}{suffix}")
+            await self.gamechan.send(output)
+
+        else:
+            bonus = int(randint(4, 12) / 100 * char.next_ttl)
+            # TODO: pull line from events file
+            char.addttl(bonus * -1)
+            dur = self.duration(bonus)
+            nextlevel = self.nextlevel(char)
+            nl = char.level + 1
+            await self.gamechan.send(f"{name} GENERIC_ACTION! This wondrous godsend has accelerated them {dur} towards level {nl}. {nextlevel}")
+
+        self.characters.update(char)
+
         devmsg('ended')
 
     async def calamity(self):
@@ -1093,17 +1210,47 @@ class IdleRPG(discord.Client):
     def duration(seconds):
         """
         :param seconds: a count of seconds
-        :return: human-readable duration of said seconds
+        :return: human-readable string of the duration of said seconds
         """
-        if seconds is None or seconds <= 0:
-            return 'a moment'
-        return '%d day%s, %02d:%02d:%02d' % (
-            seconds / 86400,
-            '' if math.trunc(seconds / 86400) == 1 else 's',
-            (seconds % 86400) / 3600,
-            (seconds % 3600) / 60,
-            (seconds % 60)
-        )
+        second  = 1
+        minute  = second * 60
+        hour    = minute * 60
+        day     = hour * 24
+        year    = day * 365
+        decade  = year * 10
+        century = decade * 10
+        sections = []
+        # Optional sections
+        if seconds >= century:
+            centuries = math.trunc(seconds / century)
+            if centuries == 1:
+                sections.append("1 century")
+            else:
+                sections.append(f"{centuries} centuries")
+            seconds -= centuries * century
+        if seconds >= decade:
+            decades = math.trunc(seconds / decade)
+            if decades == 1:
+                sections.append("1 decade")
+            else:
+                sections.append(f"{decades} decades")
+            seconds -= decades * decade
+        if seconds >= year:
+            years = math.trunc(seconds / year)
+            if years == 1:
+                sections.append("1 year")
+            else:
+                sections.append(f"{years} years")
+            seconds -= years * year
+        # Required sections
+        sections.append('%d day%s, %02d:%02d:%02d' % (
+            seconds / day,
+            '' if math.trunc(seconds / day) == 1 else 's',
+            (seconds %   day) / hour,
+            (seconds %  hour) / minute,
+            (seconds %  minute)
+        ))
+        return ", ".join(sections)
 
     @staticmethod
     def dump_audit_log_entry(entry):
