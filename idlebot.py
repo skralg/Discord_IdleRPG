@@ -159,6 +159,9 @@ class IdleRPG(discord.Client):
                     elif message.content == '!godsend':
                         await self.godsend()
                         return
+                    elif message.content == '!test_calamity':
+                        await self.calamity()
+                        return
                     elif message.content == '!monster_attack':
                         await self.monster_attack()
                         return
@@ -607,7 +610,7 @@ class IdleRPG(discord.Client):
         :return: None
         """
         devmsg('start')
-        item_type = await self.random_item()
+        item_type = self.random_item()
         curr_level = char.get_item(item_type)
         HeShe = char.heshe(True)
         himher = char.himher()
@@ -655,7 +658,7 @@ class IdleRPG(discord.Client):
         devmsg('ended')
 
     @staticmethod
-    async def random_item(self):
+    def random_item():
         item_type = choice(
             ['ring', 'amulet', 'charm', 'weapon', 'helm', 'tunic', 'gloves', 'legs', 'shield', 'boots']
         )
@@ -880,21 +883,21 @@ class IdleRPG(discord.Client):
             await self.gamechan.send(output_text)
             # Critical Strike chance if p2 rolled 85+% of max and p1 rolled 15-% theirs
             if p1sum > 0 and p2sum > 0 and p1roll / p1sum <= .15 and p2roll / p2sum >= .85:
-                dice = await self.try_critical_strie(char2, char1)
+                dice = await self.try_critical_strike(char2, char1)
                 if dice is False:
                     await self.try_item_drop(char2, char1)
         self.characters.update(char1)
         self.characters.update(char2)
         # devmsg('ended')
 
-    def try_critical_strike(self, char1, char2):
+    async def try_critical_strike(self, char1, char2):
         devmsg('start')
-        self.gamechan.send("TODO: try critical strike!")
+        await self.gamechan.send("TODO: try critical strike!")
         devmsg('ended')
 
-    def try_item_drop(self, char1, char2):
+    async def try_item_drop(self, char1, char2):
         devmsg('start')
-        self.gamechan.send("TODO: Try Item Drop!")
+        await self.gamechan.send("TODO: Try Item Drop!")
         devmsg('ended')
 
     def display_sums(self, char, align: bool, hero: bool, pots: bool):
@@ -931,7 +934,7 @@ class IdleRPG(discord.Client):
                 char_sum = int(char_sum * 1.1)
                 roll = int(roll * 1.1)
                 output_sum = f"[{roll}/{char_sum}]"
-                char.powerpots -= 1;
+                char.powerpots -= 1
                 if char.powerload > 0:
                     char.powerload -= 1
                 # Copy back, save to db
@@ -941,7 +944,7 @@ class IdleRPG(discord.Client):
                 # Add in a luck potion (5% to 10% to roll, but not to sum)
                 output_text += ' plus a luck-potion'
                 luck = char_sum * randint(5, 10) / 100
-                roll += luck;
+                roll += luck
                 if roll > char_sum:  # don't go over max
                     roll = char_sum
                 output_sum = f"[{roll}/{char_sum}]"
@@ -1057,11 +1060,11 @@ class IdleRPG(discord.Client):
             return
         char = self.characters.chars[choice(players)]
         name = char.username
-        # await self.gamechan.send(f"TODO: Godsend!")
         if randint(1, 10) == 1:
             type = self.random_item()
             hisher = char.hisher()
             HisHer = char.hisher(uppercase=True)
+            output = None
             if type == 'ring':
                 output = f"Someone accidentally spilled some luck potion on {name}'s ring, and it gained 10% effectiveness."
             elif type == 'amulet':
@@ -1103,8 +1106,60 @@ class IdleRPG(discord.Client):
         devmsg('ended')
 
     async def calamity(self):
+        """
+        A random player suffers a little one
+        :return: None
+        """
         devmsg('start')
-        await self.gamechan.send(f"TODO: Calamity!")
+        players = self.characters.online()
+        if players is None:
+            return
+        char = self.characters.chars[choice(players)]
+        name = char.username
+
+        if randint(1, 20) == 1:
+            type = self.random_item()
+            hisher = char.hisher()
+            HisHer = char.hisher(uppercase=True)
+            output = None
+            if type == 'ring':
+                output = f"{name} dropped {hisher} ring down the sink! {HisHer} ring lost 10% of its effectiveness when the plumber got it out."
+            elif type == 'amulet':
+                output = f"{name} fell, chipping the stone in {hisher} amulet! {HisHer} amulet loses 10% of its effectiveness."
+            elif type == 'charm':
+                output = f"{name} slipped and dropped {hisher} charm in a dirty bog! {HisHer} charm loses 10% of its effectiveness."
+            elif type == 'weapon':
+                output = f"{name} left {hisher} weapon out in the rain to rust! {HisHer} weapon loses 10% of its effectiveness."
+            elif type == 'helm':
+                output = f"A bird pooped on {name}'s helm, causing it to lose 10% of its effectiveness. (It was a very large bird.)"
+            elif type == 'tunic':
+                output = f"{name} spilled a level 7 shrinking potion on {hisher} tunic! {HisHer} tunic loses 10% of its effectiveness."
+            elif type == 'gloves':
+                output = f"{name} tried cleaning {hisher} gloves in the dishwasher. {HisHer} gloves lose 10% of their effectiveness."
+            elif type == 'legs':
+                output = f"{name} burned a hole through {hisher} leggings while ironing them! {HisHer} leggings lose 10% of their effectiveness."
+            elif type == 'shield':
+                output = f"{name}'s shield was damaged by a dragon's fiery breath! {HisHer} shield loses 10% of its effectiveness."
+            elif type == 'boots':
+                output = f"{name} stepped on a really sharp rusty nail. {HisHer} boots lost 10% of their effectiveness."
+
+            rawitem = char.get_item(type)
+            prefix, level, suffix = self.item_parse(rawitem)
+            newlevel = int(level * 0.9)
+            char.set_item(type, f"{prefix}{newlevel}{suffix}")
+            await self.gamechan.send(output)
+
+        else:
+            penalty = int(randint(4, 12) / 100 * char.next_ttl)
+            # TODO: pull line from events file
+            char.addttl(penalty)
+            dur = self.duration(penalty)
+            nextlevel = self.nextlevel(char)
+            nl = char.level + 1
+            await self.gamechan.send(f"{name} GENERIC_CALAMITY! This terrible calamity has slowed them {dur} from level {nl}. {nextlevel}")
+
+        self.characters.update(char)
+
         devmsg('ended')
 
     async def team_battle(self):
