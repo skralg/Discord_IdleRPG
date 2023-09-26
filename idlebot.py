@@ -542,7 +542,6 @@ class IdleRPG(discord.Client):
         :return: None
         """
         devmsg('start')
-        # await self.gamechan.send(f"TODO: Monster Attack Player!")
         (myroll, mysum, myshowsum, myshowtxt) = self.display_sums(char, align=True, hero=True, pots=True)
         gain = 12  # Default gain of 12%
         loss = 9   # Default loss of 9%
@@ -571,7 +570,7 @@ class IdleRPG(discord.Client):
             nextlevel = self.nextlevel(char)
             await self.gamechan.send(f"{output} and won! {dur} is removed from {char.username}'s clock. {nextlevel}")
         else:
-            loss = int( loss * char.next_ttl / 100)
+            loss = int(loss * char.next_ttl / 100)
             char.fightlost(loss)
             dur = self.duration(loss)
             nextlevel = self.nextlevel(char)
@@ -580,14 +579,21 @@ class IdleRPG(discord.Client):
         devmsg('ended')
 
     @staticmethod
-    def get_monster_name(monster_sum):
+    def get_monster_name(target_monster_sum):
         """
         Get an appropriate monster name for the sum provided
-        :param monster_sum: monster sum
+        :param target_monster_sum: monster sum
         :return: monster name
         """
-        # TODO: read an actual monster file!
-        return "GENERIC_MONSTER"
+        monster_name = "Monster"
+        mfile = open('monsters.txt', 'r')
+        while True:
+            mline = mfile.readline().rstrip()
+            monster_sum, monster_name = mline.split(None, 1)
+            if int(monster_sum) >= target_monster_sum:
+                mfile.close()
+                break
+        return monster_name
 
     async def random_challenge(self, char):
         devmsg('start')

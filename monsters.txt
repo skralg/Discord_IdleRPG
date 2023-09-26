@@ -1,0 +1,619 @@
+2 Bat
+4 Toad
+8 Rat
+9 Tiny Centipede
+11 Lizard
+12 Raven
+13 Donkey
+14 Monkey
+15 Small Centipede
+16 Neogi Spawn
+17 Tiny Scorpion
+18 Owl
+19 Kobold Zombie
+20 Weasel
+21 Tiny Spider
+22 Pony
+23 Moonrat
+24 Cat
+25 Kobold
+26 Dire Rat
+27 Goblin
+28 Twig Blight
+29 Dog
+30 Giant Fire Beetle
+31 Skeleton
+32 Tiny Viper
+34 Hawk
+35 Aasimar
+36 Tiefling
+37 Halfling
+38 Badger
+40 Gnome
+41 Orc
+42 Hobgoblin
+43 Medium Centipede
+44 Corollax
+45 Fiendish Dire Rat
+46 Formian Worker
+47 Zombie
+49 Dwarf
+50 Porpoise
+53 Jermlaine
+54 Small Viper
+55 Stirge
+56 Eagle
+57 Baboon
+58 Locathah
+59 Small Scorpion
+60 War Pony
+61 Elf
+62 Small Spider
+63 Merfolk
+64 Small Fire Elemental
+68 Octopus
+69 Lizardfolk
+72 Githyanki
+74 Ghoul
+75 Thri-kren
+76 Pseudodragon
+77 Drow Elf
+78 Gnoll
+79 Darkmantle
+80 Shrieker
+82 War Horse
+83 Hyena
+84 Medium Shark
+85 Medium Viper
+86 Small Water Elemental
+87 Grimlock
+88 Large Centipede
+90 Troglodyte
+91 Troglodyte Zombie
+93 Riding Dog
+94 Small Earth Elemental
+95 Nixie
+96 Bladeling
+98 Manta Ray
+99 Squid
+100 Chanod
+103 Mule
+104 Giant Ant
+105 Zenythri
+106 Githzerai
+109 Ether Scarab
+111 Small Air Elemental
+112 Camel
+118 Crested Felldrake
+119 Giant Bee
+120 Bogun
+123 Duergar Dwarf
+124 Ash Rat
+126 Spider Swarm
+128 Grig
+129 Krenshar
+131 Homunculus
+132 Medium Spider
+137 Svirfneblin Gnome
+138 Lemure
+141 Medium Scorpion
+144 Wolf Bear
+146 Azer
+147 Bugbear
+149 Large Viper
+150 Quasit
+151 Constrictor Snake
+152 Large Shark
+153 Skum
+154 Spitting Felldrake
+155 Grimalkin
+156 Dire Hawk
+157 Imp
+158 Dire Weasel
+160 Choker
+165 Shuagin
+166 Crocodile
+167 Boar
+168 Giant Ant
+169 Black Bear
+170 Needlefolk
+171 Monitor Lizard
+172 Wererat
+173 Phase Wasp
+175 Leopard
+176 Kuo-toa
+180 Giant Bombardier Beetle
+181 Huge Spider
+182 Hippogriff
+183 Ape
+186 Thaqquq
+187 Bison
+189 Cheetah
+190 Bat Swarm
+194 Bugbear Zombie
+195 Shocker Lizard
+196 Wolverine
+197 Triton
+198 Dread Guard
+199 Huge Centipede
+201 Dire Badger
+204 Lantern Archon
+205 Satyr
+206 Dire Bat
+208 Stone Spike
+210 Rat Swarm
+211 Blink Dog
+215 Vargouille
+216 Worg
+219 Loxo
+221 Dretch
+222 Grick
+223 Lion
+224 Giant Praying Mantis
+225 Assassin Vine
+226 Formian Warrior
+227 Advespa
+228 Locust Swarm
+229 Giant Eagle
+230 Rust Monster
+231 Troll Skeleton
+236 Violet Fungus
+237 Dire Wolf
+238 Giant Owl
+241 Centaur
+242 Huge Viper
+243 Boggle
+244 Howler
+245 Juvenile Arrowhawk
+246 Ethereal Filcher
+248 Unicorn
+249 Grell
+250 Tiny Salamander
+252 Wight
+254 Werewolf
+255 Gelatinous Cube
+257 Magmin
+258 Phontom Fungus
+266 Yeth Hound
+267 Mennlock
+269 Medium Earth Elemental
+270 Hell Hound
+272 Mephit
+280 Large Scorpion
+282 Pureblood Yuan-ti
+284 Medium Air Elemental
+286 Fire Bat
+287 Doppelganger
+288 Minor Xorn
+289 Ethereal Marauder
+291 Ghast
+293 Dryad
+295 Dire Toad
+299 Ogre Zombie
+301 Ettercap
+302 Pegasus
+306 Juvenile Tojanida
+307 Dervidal
+310 Deinonychus
+311 Derro
+312 Ogre
+315 Medium Water Elemental
+317 Medium Fire Elemental
+319 Cockatrice
+321 Giant Wasp
+323 Ankheg
+324 Dire Ape
+326 Shadow
+330 Allip
+332 Centipede Swarm
+343 Celestial Lion
+346 Brown Bear
+353 Five Headed Hydra
+356 Minataur Zombie
+370 Chimera Skeleton
+377 Tiger
+380 Green Slime
+384 Wereboar
+391 Displacer Beast
+394 Dire Boar
+401 Gray Ooze
+404 Vampire Spawn
+409 Giant Stag Beetle
+412 Sea Hag
+418 Gopher-Bear
+425 Archon
+428 Wyvern Zombie
+430 Pixie
+433 Sea Cat
+434 Carrion Crawler
+437 Dire Wolverine
+439 Janni
+440 Rhinoceros
+442 Aranea
+444 Huge Shark
+447 Minotaur
+448 Barghest
+453 Gargoyle
+454 Otyugh
+457 Giant Crocodile
+459 Griffon
+460 Mimic
+469 Polar Bear
+470 Owlbear
+471 Young White Dragon
+472 Harpy
+474 Hieracosphinx
+475 Shadow Mastiff
+476 Winter Wolf
+479 Ettin Skeleton
+482 Young Black Dragon
+486 Troll
+491 Dire Lion
+492 Large Air Elemental
+495 Six Headed Hydra
+496 Adult Arrowhawk
+497 Large Earth Elemental
+500 Rast
+501 Young Green Dragon
+503 Pissed Off IRPG Admin
+505 Fire Demon
+507 Yolkian
+510 Blue Spirit
+515 Adult Tojanida
+516 Scrag Troll
+517 Gibbering Mouther
+519 Wraith
+520 Halfblook Yuan-ti
+521 Giant Constrictor
+522 Werebear
+523 Mummy
+529 Large Water Elemental
+530 Large Fire Elemental
+538 Manticore
+545 Guttersnipe
+548 Gambol
+550 Huge Spider
+554 Spider Eater
+555 Weretiger
+559 Basilisk
+563 Ravid
+565 Djinni
+566 Phase Spider
+577 Nightmare Beast
+581 Umber Hulk Zombie
+587 Greater Barghest
+590 Cloaker
+592 Pixie Mage
+596 Ochre Jelly
+607 Chain Golem
+610 Achaierai
+611 Bearded Devil
+615 Orca
+620 Green Hag
+623 Ettin
+629 Wyvern
+635 Armadillo-Bear
+640 Platypus-Bear
+653 Blood Ape
+654 Girallon
+658 Belker
+661 Babau Deamon
+665 Chain Devil
+669 Hook Horror
+670 Gray Render Zombie
+675 Five Headed Cryo-hydra
+684 Shambling Mound
+688 Lamia
+694 Bralani
+700 Salamander
+705 Xorn
+706 Will-o'-wisp
+711 Gargantuan Centipede
+714 Young Blue Dragon
+721 Xill
+725 Seven Headed Hydra
+731 Baleen Whale
+737 Annis
+742 Tendriculos
+770 Digester
+774 Five Headed Pyro-hydra
+775 Megaraptor
+790 Elasmosaurus
+791 Medusa
+792 Swamplight Lynx
+796 Ghost
+797 Water Naga
+802 Huge Air Elemental
+804 Black Pudding
+805 Yuan-ti
+810 Bulette
+812 Remorhz
+813 Phasm
+819 Eight Headed Hydra
+829 Invisible Stalker
+838 Aboleth
+842 Red Slaad
+845 Frost Salamander
+849 Spectre
+854 Mongoose Dragon
+862 Six Headed Cryo-hydra
+866 Umber Hulk
+867 Huge Water Elemental
+870 Drider
+876 Six Headed Pyro-hydra
+881 Nymph
+890 Criosphinx
+892 Young Bronze Dragon
+898 Cachalot Whale
+901 Chuul
+908 Huge Earth Elemental
+911 Chimera
+915 Vampire
+916 Lillend
+917 Hill Giant
+918 Huge Scorpion
+921 Chaos Beast
+922 Ogre Barbarian
+923 Cloud Giant Skeleton
+930 Dragonne
+933 Hellcat
+934 Young Red Dragon
+942 Formian Taskmaster
+944 Succubus
+955 Dire Bear
+956 Huge Fire Elemental
+967 Flesh Golem
+971 Gargantuan Spider
+976 Efreeti
+977 Bodak
+981 Treant
+983 Djinni Noble
+996 Tyrannosaurus
+998 Elder Arrowhawk
+1001 Gray Render
+1013 Ogre Mage
+1020 Greater Shadow
+1029 Lammasu
+1041 Seven Headed Cryo-hydra
+1047 Elder Xorn
+1054 Dark Druid
+1062 Shield Gardian
+1066 Gorgon
+1067 Hellwasp Swarm
+1068 Mohrg
+1072 Glimmerskin
+1077 Athach
+1084 Dark Naga
+1089 Mind Flayer
+1092 Gynosphinx
+1095 Seven Headed Pyro-hydra
+1098 Erinyes
+1099 Nine Headed Hydra
+1101 Destrachan
+1107 Giant Octopus
+1113 Nazgul
+1120 Behir
+1137 Blue Slaad
+1144 Dire Tiger
+1151 Sabertoothed-Moose-Lion
+1158 Stone Giant
+1173 Vrock Demon
+1179 Skunk-Bear
+1189 Dragon Turtle
+1198 Eight Headed Cryo-hydra
+1203 Night Hag
+1206 Bone Devil
+1214 Roc
+1216 Triceratops
+1224 Eight Headed Pyro-hydra
+1229 Giant Squid
+1235 Ring Wraith
+1242 Elder Stone Giant
+1245 Spirit Naga
+1246 Green Slaad
+1262 Dire Shark
+1265 Delver
+1269 Nessian Warhound
+1270 Androsphinx
+1277 Colossal Centipede
+1284 Gastromo
+1291 Young Gold Dragon
+1296 Avoral
+1315 Greater Air Elemental
+1316 Frost Giant
+1318 Ten Headed Hydra
+1336 Elder Tojanida
+1341 Greater Water Elemental
+1343 Yrthak
+1347 Greater Earth Elemental
+1353 Zelekhut
+1354 Dune Stalker
+1367 Greater Fire Elemental
+1386 Formian Myrmach
+1399 Fire Giant
+1427 Clay Golem
+1432 Eleven Headed Hydra
+1459 Bebilith Demon
+1467 Nine Headed Pyro-hydra
+1469 Gargantuan Scorpion
+1501 Guardian Naga
+1511 Nine Headed Cryo-hydra
+1541 Gray Slaad
+1544 Noble Salamander
+1573 Couatl
+1576 Rakshasa
+1591 Dark Djini
+1614 Cloud Giant
+1621 Elder Fire Elemental
+1642 Forest Giant
+1644 Dread Wraith
+1655 Elder Water Elemental
+1663 Devourer
+1675 Junes Shirshu
+1696 Cauchemar
+1712 Retriever Demon
+1718 Elder Air Elemental
+1719 Troll Hunter
+1730 Twelve Headed Hydra
+1738 Elder Earth Elemental
+1746 Hezrou Demon
+1754 Black Momba
+1774 Colossal Spider
+1775 Ten Headed Cryo-hydra
+1812 Stone Golem
+1814 Harpy Archer
+1834 Ten Headed Pyro-hydra
+1838 Sun Giant
+1848 Galamabeast
+1863 Elder Black Pudding
+1870 Mature White Dragon
+1876 Colossal Scorpion
+1897 Eleven Headed Cryo-hydra
+1905 Purple Worm
+1917 Frost Worm
+1936 Leonal
+1955 Barok
+1973 Eleven Headed Pyro-hydra
+1979 Abyssal Greater Basilisk
+2005 Kolvarut
+2010 Kraken
+2023 Gonron
+2039 Displacer Beast Pack Lord
+2076 Roper
+2104 Death Slaad
+2109 Ice Devil
+2180 Iron Golem
+2191 Twelve Headed Cryo-hydra
+2217 Ghaele
+2228 Grizzly Mastodon
+2245 Twelve Headed Pyro-hydra
+2248 Lich Wizard
+2262 Dark Knight
+2268 Storm Giant
+2273 Beholder
+2299 Mummy Lord
+2364 Nightwing
+2401 Truly Horrid Umber Hulk
+2427 Werewolf Lord
+2481 Astral Deva
+2523 Beast of the Perigee
+2540 Trumpet Archon
+2581 Mature Black Dragon
+2596 Nalfeshnee
+2686 Nightmare Beast
+2751 Marut
+2812 Old White Dragon
+2842 Vampire Monk
+1348 Giant Gator
+2856 Windghost
+2945 Hero Archon Hound
+2947 Planetar
+2951 Nightwalker
+2986 Greater Stone Golem
+3057 Mature Green Dragon
+3067 Mature Blue Dragon
+3100 Cave-Crawler
+3141 Horned Devil
+3167 Old Black Dragon
+3214 Cloud Ray
+3216 Moonbeast
+3225 Gravecrawler
+3256 Giant Frost Jarl
+3297 Mature Bronze Dragon
+3325 Formian Queen
+3337 Marilith Demon
+3401 Aboleth Mage
+3477 Deathbringer
+3507 Arcanaloth
+3523 Saros Beast
+3552 Ancient White Dragon
+3659 Nightcrawler
+3688 Old Blue Dragon
+3819 Mature Red Dragon
+3876 Old Green Dragon
+3927 Mature Gold Dragon
+3946 Ragewind
+3963 Icetopus
+4003 Giant Brown Recluse Spider
+4055 Ocean Giant
+4057 Corpse Gatherer
+4069 Ancient Black Dragon
+4164 Old Bronze Dragon
+4183 White Wyrm Dragon
+4223 Hell Zombie
+4227 Juggernaut
+4247 Pit Fiend
+4289 Old Red Dragon
+4320 Balor Demon
+4419 Black Wyrm Dragon
+4467 Megapede
+4557 Surfeit of Skunks
+4649 Titan
+4657 Ancient Green Dragon
+4790 Ancient Blue Dragon
+4840 Rabid Timber Wolf
+4953 White Great Wyrm Dragon
+4962 Old Gold Dragon
+5053 Black Mamba
+5168 Ancient Bronze Dragon
+5231 Black Great Wyrm Dragon
+5352 Green Wyrm Dragon
+5398 Bronze Wyrm Dragon
+5461 Solar
+5492 Ratman
+5547 Blue Wyrm Dragon
+5682 Ancient Red Dragon
+5855 Red Wyrm Dragon
+5894 Phoenix
+5922 Ancient Gold Dragon
+6176 Green Great Wyrm Dragon
+6260 Leviathan
+6334 Dred Linnorm
+6489 Bronze Great Wyrm Dragon
+6543 Blue Great Wyrm Dragon
+6620 Gold Wyrm Dragon
+6742 Swamp Thing
+6813 Red Great Wyrm Dragon
+7046 Mountain Giant
+7383 Gold Great Wyrm Dragon
+7623 Tarrasque
+8263 Purple Pentapus
+8843 Famine Spirit
+9518 Purple Great Wyrm Dragon
+9879 Mind Flayer Sorcerer
+10043 Balrog, Demon of Darkness
+10671 Beholder
+11021 Cave Troll
+11503 Gastromo
+12050 Three-Headed Land Hydra
+12470 Giant Sea Worm
+13020 Four-Headed Serpent
+13430 Gate Keeper
+13866 Mountain Snake
+14010 Ancient Dark Evil
+14789 Hydrofalus
+15015 Dark Rider
+16050 El Diablo
+17079 Plague of Locust
+18010 Orange Great Wyrm Dragon
+19133 Manticore
+21086 Manbearpig
+22316 Hei Bai Spirit
+23333 Glabrezu Demon
+24681 Wan Shi Tong Spirit
+25412 Koh Spirit
+26737 Barbed Devil
+27617 Badger-Mole
+28000 Demigod
+29000 Celestial Deity
+30000 Earth God
+31000 Night God
+32000 Ocean God
+33000 Water God
+34000 Death God
+35000 Fate Goddess
+36000 Nature Goddess
+37000 Moon Goddess
+38000 Sun God
+39000 War God
+40000 Time Lord
