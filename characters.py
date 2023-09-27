@@ -232,12 +232,57 @@ class Characters:
         cursor.close()
         self.dbh.commit()
 
-    def online(self, user_id: int = None, status: int = None, alignment: str = None):
+    def filter(self, online: int = None, alignment: str = None, levelplus: int = None,
+               levelminus: int = None, charsumplus: int = None, charsumminus: int = None,
+               notnamed: str = None, debug: bool = False):
+        """
+        Get various lists of characters, with varying levels of specificity
+        :param online:       Filter by online status
+        :param alignment:    Filter by alignment
+        :param levelplus:    Filter by char >= level
+        :param levelminus:   Filter by char <= level
+        :param charsumplus:  Filter by character itemsum >= charsum
+        :param charsumminus: Filter by character itemsum <= charsum
+        :param notnamed:     Filter by character username != notnamed
+        :return: List of character IDs
+        """
+        char_list = []
+        for c in self.chars:
+            char = self.chars[c]
+            u = char.username
+            if online is not None and char.online != online:
+                if debug: devmsg(f"{u} online disq: want {online} but {u} is {char.online}")
+                continue
+            if alignment is not None and char.alignment != alignment:
+                if debug: devmsg(f"{u} align disq: want {alignment} but {u} is {char.alignment}")
+                continue
+            if levelplus is not None and char.level < levelplus:
+                if debug: devmsg(f"{u} level < disq: want {levelplus}+ but {u} is {char.level}")
+                continue
+            if levelminus is not None and char.level > levelminus:
+                if debug: devmsg(f"{u} level > disq: want {levelminus}- but {u} is {char.level}")
+                continue
+            if charsumplus is not None and char.itemsum() < charsumplus:
+                if debug: devmsg(f"{u} sum < disq: want {charsumplus}+ but {u} is {char.itemsum()}")
+                continue
+            if charsumminus is not None and char.itemsum() > charsumminus:
+                if debug: devmsg(f"{u} sum > disq: want {charsumminus}- but {u} is {char.itemsum()}")
+                continue
+            if notnamed is not None and char.username == notnamed:
+                if debug: devmsg(f"{u} name disq: {char.username} == {notnamed}")
+                continue
+            char_list.append(c)
+        return char_list
+
+    def online(self, user_id: int = None, status: int = None, alignment: str = None,
+               levelplus: int = None, levelminus: int = None):
         """
         Get a list of online users when no user or status specified
         :param user_id: Optional user id to check online status of
         :param status: Optional status to set a user to (user must be specified)
         :param alignment: Option alignment to filter the count. Cannot be used with user_id or status
+        :param levelplus: Optional char >= level to filter the count. Cannot be used with user_id or status
+        :param levelminus: Optional char <= level to filter the count. Cannot be used with user_id or status
         :return: List of IDs, or 0 or 1 for status get/set
         """
         # devmsg('start')
@@ -259,11 +304,26 @@ class Characters:
                     char_list.append(c)
             return char_list
 
+        if levelplus is not None:
+            char_list = []
+            for c in self.chars:
+                char = self.chars[c]
+                if char.level >= levelplus:
+                    char_list.append(c)
+            return char_list
+
+        if levelminus is not None:
+            char_list = []
+            for c in self.chars:
+                char = self.chars[c]
+                if char.level <= levelplus:
+                    char_list.append(c)
+            return char_list
+
         if status is None:
             return self.chars[user_id].online
 
         self.chars[user_id].online = status
-        # devmsg(f'ended: {status}')
         return status
 
     def topx(self, count=5):
@@ -345,3 +405,12 @@ CREATE TABLE "CHARACTERS" (
 	PRIMARY KEY("id")
 )
 """
+
+
+if __name__ == "__main__":
+    import sqlite3
+    dbh = sqlite3.connect('irpg.db')
+    characters = Characters(dbh)
+    characters.load()
+    charlist = characters.filter(debug=True, online=1, levelplus=5, levelminus=15)
+    devmsg(f"charlist: {charlist}")

@@ -159,11 +159,20 @@ class IdleRPG(discord.Client):
                     elif message.content == '!godsend':
                         await self.godsend()
                         return
+                    elif message.content == '!random_challenge':
+                        char = self.random_online_char()
+                        await self.random_challenge(char)
+                        return
                     elif message.content == '!test_calamity':
                         await self.calamity()
                         return
                     elif message.content == '!monster_attack':
                         await self.monster_attack()
+                        return
+                    elif message.content == '!test_cs':
+                        simple = self.characters.chars[181563324599762944]
+                        seiyria = self.characters.chars[122862594724855808]
+                        await self.try_critical_strike(simple, seiyria)
                         return
                     elif message.content == '!test_itemdrop':
                         simple = self.characters.chars[181563324599762944]
@@ -403,6 +412,13 @@ class IdleRPG(discord.Client):
     async def on_resumed(self):
         devmsg('resumed')
 
+    ##################################################
+    #                                                #
+    #              Server Logic Above                #
+    #               Game Logic Below                 #
+    #                                                #
+    ##################################################
+
     async def mainloop(self):
         """
         This is the function that keeps us moving
@@ -475,6 +491,11 @@ class IdleRPG(discord.Client):
             # TODO: await self.announce_next_tournament()
 
             # TODO: random_challenge, hourly, 15% of all players must be level 25+ irpg.pl:2643
+            players = self.characters.online(levelplus=25)
+            # 15% of online players must be level 25+
+            if len(players) / len(online) > .15:
+                char = self.random_online_char()
+                await self.random_challenge(char)
 
         # Decrement next_ttl, level up, etc
         # devmsg('doing instant tasks')
@@ -522,16 +543,25 @@ class IdleRPG(discord.Client):
         # TODO: irpg.pl:2720
         # devmsg('ended')
 
+    def random_online_char(self):
+        """
+        Pick a random online character
+        :return: char
+        """
+        players = self.characters.online()
+        if players is None:
+            return
+        return self.characters.chars[choice(players)]
+
     async def monster_attack(self) -> None:
         """
         Pit random player against a random monster
         :return: None
         """
         devmsg('start')
-        players = self.characters.online()
-        if players is None:
+        char = self.random_online_char()
+        if char is None:
             return
-        char = self.characters.chars[choice(players)]
         await self.monster_attack_player(char)
         devmsg('ended')
 
@@ -595,9 +625,61 @@ class IdleRPG(discord.Client):
                 break
         return monster_name
 
-    async def random_challenge(self, char):
+    async def random_challenge(self, char1) -> None:
+        """
+        Pit argument player against random player.
+        Happens on leveling up, and to one random person each hour.
+        :param char1: Targeted Player
+        :return: None
+        """
         devmsg('start')
-        # await self.gamechan.send(f"TODO: Random Challenge!")
+        max_level = char1.level + 10
+        itemsum = char1.itemsum()
+        min_sum   = itemsum * 0.85
+        max_sum   = itemsum * 1.15
+        opponents = self.characters.filter(online=1, levelminus=max_level, charsumplus=min_sum,
+                                           charsumminus=max_sum, notnamed=char1.username)
+        if len(opponents) == 0:
+            await self.gamechan.send(f"{char1.username} issued a challenge, but nobody felt like being defeated.")
+            return
+
+        char2 = self.characters.chars[choice(opponents)]
+        char1name = char1.username
+        char2name = char2.username
+        char1roll, char1sum, char1showsum, char1showtxt = self.display_sums(char1, align=True, hero=True, pots=True)
+        char2roll, char2sum, char2showsum, char2showtxt = self.display_sums(char2, align=True, hero=True, pots=True)
+        output = f"{char1showtxt} {char1showsum} has challenged {char2name} {char2showsum} in combat"
+        if char1roll >= char2roll:
+            # char1 wins
+            gain = int(char2.level / 4)
+            if gain < 7: gain = 7
+            gain = int((gain / 100) * char1.next_ttl)
+            dur = self.duration(gain)
+            nl = self.nextlevel(char1)
+            char1.fightwon(gain)  # ttl gain, battles won incremented
+            char2.fightlost(0)  # they don't get penalized, but battles lost incremented
+            await self.gamechan.send(f"{output} and won! {dur} is removed from {char1name}'s clock. {nl}")
+            if char1sum > 0 and char2sum > 0 and char1roll / char1sum >= .85 and char2roll / char2sum <= .15:
+                # Try critical strike
+                dice = await self.try_critical_strike(char1, char2)
+                if dice == 0:
+                    # Try item drop if crit failed
+                    await self.try_item_drop(char1, char2)
+        else:
+            gain = int(char2.level / 7)
+            if gain < 7: gain = 7
+            gain = int((gain / 100) * char1.next_ttl)
+            dur = self.duration(gain)
+            nl = self.nextlevel(char1)
+            char1.fightlost(gain)
+            char2.fightwon(0)
+            await self.gamechan.send(f"{output} and lost! {dur} is added to {char1name}'s clock. {nl}")
+
+        self.characters.update(char1)
+        self.characters.update(char2)
+
+
+
         devmsg('ended')
 
     async def find_gold(self, char):
@@ -897,9 +979,34 @@ class IdleRPG(discord.Client):
         # devmsg('ended')
 
     async def try_critical_strike(self, char1, char2):
+        """
+        Character 1 attempts a critical strike on Character 2
+        :param char1: Character 1
+        :param char2: Character 2
+        :return: 0 on Fail, 1 on Success
+        """
         devmsg('start')
-        await self.gamechan.send("TODO: try critical strike!")
+        al = char1.alignment
+        cs_factor = 35                # neutral has a standard 1/35 chance of critically striking
+        if al == "g": cs_factor = 50  # good has a harder time of it
+        if al == "e": cs_factor = 20  # evil does it easier
+        targ = randint(1, cs_factor)
+        return_value = 0
+        # devmsg(f"targ is {targ} for cs factor {cs_factor}")
+        if targ == 1:
+            gain = int(randint(5, 25) / 100 * char2.next_ttl)
+            char2.next_ttl += gain
+            char2.badd += gain
+            c1 = char1.username
+            c2 = char2.username
+            dur = self.duration(gain)
+            c2nl = self.nextlevel(char2)
+            await self.gamechan.send(f"{c1} has dealt {c2} a Critical Strike! {dur} is added to {c2}'s clock. {c2nl}")
+            self.characters.update(char2)
+            return_value = 1
+
         devmsg('ended')
+        return return_value
 
     async def try_item_drop(self, char1, char2):
         devmsg('start')
@@ -978,10 +1085,9 @@ class IdleRPG(discord.Client):
 
     async def random_gold(self):
         devmsg('start')
-        players = self.characters.online()
-        if players is None:
+        char = self.random_online_char()
+        if char is None:
             return
-        char = self.characters.chars[choice(players)]
         gold_amount = randint(0, char.level) + 10
         gold = char.addgold(gold_amount)
         self.characters.update(char)
@@ -994,10 +1100,9 @@ class IdleRPG(discord.Client):
         :return: None
         """
         devmsg('start')
-        players = self.characters.online()
-        if players is None:
+        char = self.random_online_char()
+        if char is None:
             return
-        char = self.characters.chars[choice(players)]
         celebs = {
             'Humpty Dumpty'         :  0,
             'Tweedledee'            :  0,
@@ -1061,10 +1166,9 @@ class IdleRPG(discord.Client):
         :return: None
         """
         devmsg('start')
-        players = self.characters.online()
-        if players is None:
+        char = self.random_online_char()
+        if char is None:
             return
-        char = self.characters.chars[choice(players)]
         name = char.username
         if randint(1, 10) == 1:
             type = self.random_item()
@@ -1117,10 +1221,9 @@ class IdleRPG(discord.Client):
         :return: None
         """
         devmsg('start')
-        players = self.characters.online()
-        if players is None:
+        char = self.random_online_char()
+        if char is None:
             return
-        char = self.characters.chars[choice(players)]
         name = char.username
 
         if randint(1, 20) == 1:
@@ -1181,9 +1284,9 @@ class IdleRPG(discord.Client):
     async def hand_of_god(self):
         devmsg('start')
         # await self.gamechan.send(f"TODO: Hand of God!")
-        players = self.characters.online()
-        player = choice(players)
-        char = self.characters.chars[player]
+        char = self.random_online_char()
+        if char is None:
+            return
         win = randint(0, 4)
         bonus = int(randint(4, 75) / 100 * char.next_ttl)
         dur = self.duration(bonus)
