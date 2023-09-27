@@ -174,6 +174,11 @@ class IdleRPG(discord.Client):
                         seiyria = self.characters.chars[122862594724855808]
                         await self.try_critical_strike(simple, seiyria)
                         return
+                    elif message.content == '!test_id':
+                        simple = self.characters.chars[181563324599762944]
+                        seiyria = self.characters.chars[122862594724855808]
+                        await self.try_item_drop(simple, seiyria)
+                        return
                     elif message.content == '!test_itemdrop':
                         simple = self.characters.chars[181563324599762944]
                         await self.find_item(simple)
@@ -913,9 +918,9 @@ class IdleRPG(discord.Client):
         """
         # devmsg('start')
         (p1roll, p1sum, p1showsum, p1showtxt) = self.display_sums(char1, align=True, hero=False, pots=False)
-        devmsg(f"{p1roll}, {p1sum}, {p1showsum}, {p1showtxt}")
+        # devmsg(f"{p1roll}, {p1sum}, {p1showsum}, {p1showtxt}")
         (p2roll, p2sum, p2showsum, p2showtxt) = self.display_sums(char2, align=True, hero=False, pots=False)
-        devmsg(f"{p2roll}, {p2sum}, {p2showsum}, {p2showtxt}")
+        # devmsg(f"{p2roll}, {p2sum}, {p2showsum}, {p2showtxt}")
         output_text = f"{p1showtxt} {p1showsum} has come upon {char2.username} {p2showsum}"
         if p1roll >= p2roll:  # char1 won
             gain = int(char2.level / 4)
@@ -1010,7 +1015,41 @@ class IdleRPG(discord.Client):
 
     async def try_item_drop(self, char1, char2):
         devmsg('start')
-        await self.gamechan.send("TODO: Try Item Drop!")
+        if char1.level < 20:
+            devmsg('ended: level too low')
+            return
+        randbase = 70  # 1 in 70 chance to even bother checking
+        # Make it less likely for a low levels to steal from higher levels, and easier for higher to take from lower
+        randbase += char2.level
+        randbase -= char1.level
+
+        # Undead more likely to get a drop, priest less likely
+        if char1.alignment == "e": randbase -= 10
+        if char1.alignment == "g": randbase += 10
+
+        # Priests more likely to drop an item, undead less likely
+        if char2.alignment == "g": randbase -= 10
+        if char2.alignment == "e": randbase += 10
+
+        if randint(1, randbase) == 1:
+            itype = self.random_item()  # item type
+            c1il = self.item_level(char1.get_item(itype))  # character 1 item level
+            c2il = self.item_level(char2.get_item(itype))  # character 2 item level
+            if c2il > c1il:  # if character 2 item level > character 1 item level
+                c1hh = char1.hisher()
+                c2hh = char2.hisher()
+                c1n = char1.username
+                c2n = char2.username
+                await self.gamechan.send(
+                    f"In the fierce battle, {c2n} dropped {c2hh} level {c2il} {itype}! "
+                    f"{c1n} picks it up, tossing {c1hh} old level {c1il} {itype} to {c2n}."
+                )
+                tmp = char1.get_item(itype)  # store char1's item
+                char1.set_item(itype, char2.get_item(itype))  # set char1's item to char2's item
+                char2.set_item(itype, tmp)   # set char2's item to the stored value of char1's
+                self.characters.update(char1)
+                self.characters.update(char2)
+
         devmsg('ended')
 
     def display_sums(self, char, align: bool, hero: bool, pots: bool):
