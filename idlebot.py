@@ -9,7 +9,7 @@ import time
 
 from devmsg import devmsg
 from dotenv import load_dotenv
-from random import choice, randint, seed
+from random import choice, randint, seed, uniform
 
 logging.basicConfig(level=logging.INFO)
 load_dotenv()
@@ -227,7 +227,9 @@ class IdleRPG(discord.Client):
                         self.characters.update(char)
                         await message.reply(f"Your alignment was changed to '{new_align}'", mention_author=True)
                     else:
-                        await message.reply(f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True)
+                        await message.reply(
+                            f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True
+                        )
                     return
                 elif message.content == '!whoami':
                     await message.reply(char.whoami())
@@ -379,7 +381,8 @@ class IdleRPG(discord.Client):
                 guild = member_before.guild.name
                 heshe = char.heshe(uppercase=1)
                 dur = self.duration(char.next_ttl)
-                await self.gamechan.send(f"{username}, the level {level} {charclass} is now online from **{guild}**. {heshe} reaches level {level + 1} in {dur}.")
+                await self.gamechan.send(f"{username}, the level {level} {charclass} is now online from **{guild}**. "
+                                         f"{heshe} reaches level {level + 1} in {dur}.")
             else:
                 if aft == 'offline':
                     char.online = 0
@@ -397,7 +400,9 @@ class IdleRPG(discord.Client):
             self.characters.update(char)
             dur = self.duration(pen)
             devmsg(f"pen({pen}) dur({dur})")
-            await self.gamechan.send(f"Penalty of {dur} added to {username}'s timer for activity change of '{bef}' to '{aft}'.")
+            await self.gamechan.send(
+                f"Penalty of {dur} added to {username}'s timer for activity change of '{bef}' to '{aft}'."
+            )
 
         if char.online == 0:
             return
@@ -466,7 +471,7 @@ class IdleRPG(discord.Client):
         if randint(0, int(9  * 86400 / self.self_clock)) < online_count: await self.team_battle()
         if randint(0, int(8  * 86400 / self.self_clock)) < online_count: await self.calamity()
         if randint(0, int(8  * 86400 / self.self_clock)) < online_count: await self.godsend()
-        if randint(0, int(8  * 14400 / self.self_clock)) < online_count: await self.celebrity_fight()  # beast_opp in Perl
+        if randint(0, int(8  * 14400 / self.self_clock)) < online_count: await self.celebrity_fight()
         if randint(0, int(8  * 19400 / self.self_clock)) < online_count: await self.random_gold()
         if randint(0, int(8  * 43200 / self.self_clock)) < online_count: await self.monster_attack()
 
@@ -532,7 +537,10 @@ class IdleRPG(discord.Client):
                 heshe = char.heshe(uppercase=1)
                 devmsg(f"heshe: {heshe}")
                 dur = self.duration(base_ttl)
-                await self.gamechan.send(f"{char.username}, {char.charclass}, has attained level {char.level}! {heshe} reaches level {nextlevel} in {dur}.")
+                await self.gamechan.send(
+                    f"{char.username}, {char.charclass}, has attained level {char.level}! "
+                    f"{heshe} reaches level {nextlevel} in {dur}."
+                )
                 await self.find_item(char)
                 await self.find_gold(char)
                 await self.random_challenge(char)
@@ -693,7 +701,10 @@ class IdleRPG(discord.Client):
         char.gold += gold_amount
         self.characters.update(char)
         gold_total = char.gold
-        await self.gamechan.send(f"{char.username} found {gold_amount} gold pieces lying on the ground and picked them up to sum {gold_total} total gold.")
+        await self.gamechan.send(
+            f"{char.username} found {gold_amount} gold pieces lying on the "
+            f"ground and picked them up to sum {gold_total} total gold."
+        )
         devmsg('ended')
 
     async def find_item(self, char):
@@ -1006,7 +1017,9 @@ class IdleRPG(discord.Client):
             c2 = char2.username
             dur = self.duration(gain)
             c2nl = self.nextlevel(char2)
-            await self.gamechan.send(f"{c1} has dealt {c2} a Critical Strike! {dur} is added to {c2}'s clock. {c2nl}")
+            await self.gamechan.send(
+                f"{c1} has dealt {c2} a Critical Strike! {dur} is added to {c2}'s clock. {c2nl}"
+            )
             self.characters.update(char2)
             return_value = 1
 
@@ -1130,7 +1143,9 @@ class IdleRPG(discord.Client):
         gold_amount = randint(0, char.level) + 10
         gold = char.addgold(gold_amount)
         self.characters.update(char)
-        await self.gamechan.send(f"{char.username} just walked by {gold_amount} gold pieces and picked them up to sum {gold} total gold.")
+        await self.gamechan.send(
+            f"{char.username} just walked by {gold_amount} gold pieces and picked them up to sum {gold} total gold."
+        )
         devmsg('ended')
 
     async def celebrity_fight(self):
@@ -1192,7 +1207,9 @@ class IdleRPG(discord.Client):
         if p1roll >= opproll:
             char.fightwon(gain)
             char.addgold(10)
-            await self.gamechan.send(f"{output} wins! {dur} removed from {char.username}'s time and 10 gold added. {nextlevel}")
+            await self.gamechan.send(
+                f"{output} wins! {dur} removed from {char.username}'s time and 10 gold added. {nextlevel}"
+            )
         else:
             char.fightlost(gain)
             await self.gamechan.send(f"{output} lost! {dur} added to {char.username}'s time. {nextlevel}")
@@ -1215,7 +1232,8 @@ class IdleRPG(discord.Client):
             HisHer = char.hisher(uppercase=True)
             output = None
             if type == 'ring':
-                output = f"Someone accidentally spilled some luck potion on {name}'s ring, and it gained 10% effectiveness."
+                output = f"Someone accidentally spilled some luck potion on {name}'s ring, " \
+                         f"and it gained 10% effectiveness."
             elif type == 'amulet':
                 output = f"{name}'s amulet was blessed by a passing cleric! {HisHer} amulet gains 10% effectiveness."
             elif type == 'charm':
@@ -1225,15 +1243,20 @@ class IdleRPG(discord.Client):
             elif type == 'helm':
                 output = f"{name} beat the dents out of {hisher} helm! {HisHer} helm is not 10% stronger."
             elif type == 'tunic':
-                output = f"A magician cast a spell of Rigidity on {name}'s tunic! {HisHer} tunic gains 10% effectiveness."
+                output = f"A magician cast a spell of Rigidity on {name}'s tunic! " \
+                         f"{HisHer} tunic gains 10% effectiveness."
             elif type == 'gloves':
-                output = f"{name} cleaned {hisher} gloves in the dishwasher. {HisHer} gloves gain 10% effectiveness."
+                output = f"{name} cleaned {hisher} gloves in the dishwasher. " \
+                         f"{HisHer} gloves gain 10% effectiveness."
             elif type == 'legs':
-                output = f"The local wizard imbued {name}'s pants with a Spirit of Fortitude! {HisHer} pants gain 10% effectiveness."
+                output = f"The local wizard imbued {name}'s pants with a Spirit of Fortitude! " \
+                         f"{HisHer} pants gain 10% effectiveness."
             elif type == 'shield':
-                output = f"{name} reinforced {hisher} shield with a dragon's scales! {HisHer} shidle gains 10% effectiveness."
+                output = f"{name} reinforced {hisher} shield with a dragon's scales! " \
+                         f"{HisHer} shidle gains 10% effectiveness."
             elif type == 'boots':
-                output = f"{name} stepped in some unicorn poo. It was gross to clean up, but the boots are not 10% more effective."
+                output = f"{name} stepped in some unicorn poo. It was gross to clean up, " \
+                         f"but the boots are not 10% more effective."
 
             rawitem = char.get_item(type)
             prefix, level, suffix = self.item_parse(rawitem)
@@ -1248,7 +1271,22 @@ class IdleRPG(discord.Client):
             dur = self.duration(bonus)
             nextlevel = self.nextlevel(char)
             nl = char.level + 1
-            await self.gamechan.send(f"{name} GENERIC_ACTION! This wondrous godsend has accelerated them {dur} towards level {nl}. {nextlevel}")
+            action = "GENERIC_ACTION"
+            efile = open('events.txt', 'r')
+            index = 0
+            while True:
+                eline = efile.readline().rstrip()
+                if eline == "":
+                    efile.close()
+                    break
+                e_type, flavor = eline.split(None, 1)
+                if e_type == "G":
+                    index += 1
+                    random_number = uniform(0, index)
+                    if random_number < 1:
+                        action = flavor
+            await self.gamechan.send(f"{name} {action}. This wondrous godsend has "
+                                     f"accelerated them {dur} towards level {nl}. {nextlevel}")
 
         self.characters.update(char)
 
@@ -1271,25 +1309,35 @@ class IdleRPG(discord.Client):
             HisHer = char.hisher(uppercase=True)
             output = None
             if type == 'ring':
-                output = f"{name} dropped {hisher} ring down the sink! {HisHer} ring lost 10% of its effectiveness when the plumber got it out."
+                output = f"{name} dropped {hisher} ring down the sink! " \
+                         f"{HisHer} ring lost 10% of its effectiveness when the plumber got it out."
             elif type == 'amulet':
-                output = f"{name} fell, chipping the stone in {hisher} amulet! {HisHer} amulet loses 10% of its effectiveness."
+                output = f"{name} fell, chipping the stone in {hisher} amulet! " \
+                         f"{HisHer} amulet loses 10% of its effectiveness."
             elif type == 'charm':
-                output = f"{name} slipped and dropped {hisher} charm in a dirty bog! {HisHer} charm loses 10% of its effectiveness."
+                output = f"{name} slipped and dropped {hisher} charm in a dirty bog! " \
+                         f"{HisHer} charm loses 10% of its effectiveness."
             elif type == 'weapon':
-                output = f"{name} left {hisher} weapon out in the rain to rust! {HisHer} weapon loses 10% of its effectiveness."
+                output = f"{name} left {hisher} weapon out in the rain to rust! " \
+                         f"{HisHer} weapon loses 10% of its effectiveness."
             elif type == 'helm':
-                output = f"A bird pooped on {name}'s helm, causing it to lose 10% of its effectiveness. (It was a very large bird.)"
+                output = f"A bird pooped on {name}'s helm, causing it to lose 10% of its effectiveness. " \
+                          "(It was a very large bird.)"
             elif type == 'tunic':
-                output = f"{name} spilled a level 7 shrinking potion on {hisher} tunic! {HisHer} tunic loses 10% of its effectiveness."
+                output = f"{name} spilled a level 7 shrinking potion on {hisher} tunic! " \
+                         f"{HisHer} tunic loses 10% of its effectiveness."
             elif type == 'gloves':
-                output = f"{name} tried cleaning {hisher} gloves in the dishwasher. {HisHer} gloves lose 10% of their effectiveness."
+                output = f"{name} tried cleaning {hisher} gloves in the dishwasher. " \
+                         f"{HisHer} gloves lose 10% of their effectiveness."
             elif type == 'legs':
-                output = f"{name} burned a hole through {hisher} leggings while ironing them! {HisHer} leggings lose 10% of their effectiveness."
+                output = f"{name} burned a hole through {hisher} leggings while ironing them! " \
+                         f"{HisHer} leggings lose 10% of their effectiveness."
             elif type == 'shield':
-                output = f"{name}'s shield was damaged by a dragon's fiery breath! {HisHer} shield loses 10% of its effectiveness."
+                output = f"{name}'s shield was damaged by a dragon's fiery breath! " \
+                         f"{HisHer} shield loses 10% of its effectiveness."
             elif type == 'boots':
-                output = f"{name} stepped on a really sharp rusty nail. {HisHer} boots lost 10% of their effectiveness."
+                output = f"{name} stepped on a really sharp rusty nail. " \
+                         f"{HisHer} boots lost 10% of their effectiveness."
 
             rawitem = char.get_item(type)
             prefix, level, suffix = self.item_parse(rawitem)
@@ -1304,7 +1352,24 @@ class IdleRPG(discord.Client):
             dur = self.duration(penalty)
             nextlevel = self.nextlevel(char)
             nl = char.level + 1
-            await self.gamechan.send(f"{name} GENERIC_CALAMITY! This terrible calamity has slowed them {dur} from level {nl}. {nextlevel}")
+            action = "GENERIC_CALAMITY"
+            efile = open('events.txt', 'r')
+            index = 0
+            while True:
+                eline = efile.readline().rstrip()
+                if eline == "":
+                    efile.close()
+                    break
+                e_type, flavor = eline.split(None, 1)
+                if e_type == "C":
+                    index += 1
+                    random_number = uniform(0, index)
+                    if random_number < 1:
+                        action = flavor
+
+            await self.gamechan.send(
+                f"{name} {action}. This terrible calamity has slowed them {dur} from level {nl}. {nextlevel}"
+            )
 
         self.characters.update(char)
 
@@ -1333,11 +1398,13 @@ class IdleRPG(discord.Client):
         if win:
             char.next_ttl -= bonus
             nextlevel = self.nextlevel(char)
-            await self.gamechan.send(f"Verily I say unto thee, the Heavens have burst forth, and the blessed hand of God carried {char.username} {dur} forward. {nextlevel}")
+            await self.gamechan.send(f"Verily I say unto thee, the Heavens have burst forth, and the "
+                                     f"blessed hand of God carried {char.username} {dur} forward. {nextlevel}")
         else:
             char.next_ttl += bonus
             nextlevel = self.nextlevel(char)
-            await self.gamechan.send(f"Thereupon He stretched out His little finger among them and consumed {char.username} with fire, slowing the heathen by {dur}. {nextlevel}")
+            await self.gamechan.send(f"Thereupon He stretched out His little finger among them and consumed "
+                                     f"{char.username} with fire, slowing the heathen by {dur}. {nextlevel}")
         self.characters.update(char)
         devmsg('ended')
 
