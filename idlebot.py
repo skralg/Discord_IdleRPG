@@ -27,8 +27,8 @@ class IdleRPG(discord.Client):
     rppenstep = 1.6    # penalty time = penalty * (rppenstep ** level)
     limitpen = 604800  # penalty max limited to 1 week of seconds
     self_clock = 3     # how often to run the event loop
-    mapx = 50          # custom size of map width
-    mapy = 50          # custom size of map height
+    mapx = 851         # custom size of map width
+    mapy = 700         # custom size of map height
     rpreport = 0       # timestamp for reporting top players
     oldrpreport = 0    # previous value for reporting top players
     lasttime = 1       # last time that rpcheck() was run. Used for time diff to shave next_ttl
@@ -138,6 +138,7 @@ class IdleRPG(discord.Client):
             return
         else:
             char = self.characters.find(message.author)
+            # devmsg(f"char({char.username}) chan({message.channel.name}) message({message.content})")
             if message.channel.name == 'idlerpg':
                 devmsg(message)
                 devmsg(message.content)
@@ -208,7 +209,7 @@ class IdleRPG(discord.Client):
                 ###################
                 # Member commands #
                 ###################
-                elif message.content.startswith('!class '):
+                if message.content.startswith('!class '):
                     new_class = message.content.split(' ', 1)[1]
                     char.charclass = new_class
                     self.characters.update(char)
@@ -231,7 +232,8 @@ class IdleRPG(discord.Client):
                             f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True
                         )
                     return
-                elif message.content == '!whoami':
+                elif message.content.startswith('!whoami'):
+                    devmsg(f"{char.username} did whoami")
                     await message.reply(char.whoami())
                     return
 
@@ -391,7 +393,7 @@ class IdleRPG(discord.Client):
                     dur = self.duration(pen)
                     await self.gamechan.send(f"Penalty of {dur} added to {username}'s timer for going offline.")
 
-        if member_before.activity != member_after.activity:
+        if member_before.activity is not None and member_after.activity is not None and member_before.activity.name != member_after.activity.name:
             bef = member_before.activity
             aft = member_after.activity
             devmsg(f'before activity: {bef!r}')
@@ -400,8 +402,12 @@ class IdleRPG(discord.Client):
             self.characters.update(char)
             dur = self.duration(pen)
             devmsg(f"pen({pen}) dur({dur})")
+
+            # f"Penalty of {dur} added to {username}'s timer for activity change of '{bef}' to '{aft}'."
+            # Before is an ActivityType.watching
+            # After can be 'None'
             await self.gamechan.send(
-                f"Penalty of {dur} added to {username}'s timer for activity change of '{bef}' to '{aft}'."
+                f"Penalty of {dur} added to {username}'s timer for activity change."
             )
 
         if char.online == 0:
