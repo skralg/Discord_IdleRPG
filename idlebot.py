@@ -41,6 +41,9 @@ class IdleRPG(discord.Client):
     role_idle = None
     role_dnd = None
 
+    # Track our loop so we don't get multiples started
+    loop_started = False
+
     # Items on the map. Dict of dicts of a list of dicts. It really does make sense.
     map_items = {}
 
@@ -131,7 +134,8 @@ class IdleRPG(discord.Client):
 
         devmsg('Game starting!')
         self.lasttime = int(time.time())
-        self.bg_task = self.loop.create_task(self.mainloop())
+        if not self.loop_started:
+            self.bg_task = self.loop.create_task(self.mainloop())
 
     async def on_message(self, message):
         if message.author.id == self.user.id:
@@ -441,6 +445,7 @@ class IdleRPG(discord.Client):
         :return: None
         """
         # devmsg('start')
+        self.loop_started = True
         try:
             await self.rpcheck()
         except Exception as e:
