@@ -679,9 +679,9 @@ class IdleRPG(discord.Client):
             if gain < 7: gain = 7
             gain = int((gain / 100) * char1.next_ttl)
             dur = self.duration(gain)
-            nl = self.nextlevel(char1)
             char1.fightwon(gain)  # ttl gain, battles won incremented
             char2.fightlost(0)  # they don't get penalized, but battles lost incremented
+            nl = self.nextlevel(char1)
             await self.gamechan.send(f"{output} and won! {dur} is removed from {char1name}'s clock. {nl}")
             if char1sum > 0 and char2sum > 0 and char1roll / char1sum >= .85 and char2roll / char2sum <= .15:
                 # Try critical strike
@@ -694,16 +694,13 @@ class IdleRPG(discord.Client):
             if gain < 7: gain = 7
             gain = int((gain / 100) * char1.next_ttl)
             dur = self.duration(gain)
-            nl = self.nextlevel(char1)
             char1.fightlost(gain)
             char2.fightwon(0)
+            nl = self.nextlevel(char1)
             await self.gamechan.send(f"{output} and lost! {dur} is added to {char1name}'s clock. {nl}")
 
         self.characters.update(char1)
         self.characters.update(char2)
-
-
-
         devmsg('ended')
 
     async def find_gold(self, char):
@@ -952,7 +949,6 @@ class IdleRPG(discord.Client):
             char1.fightwon(gain)
             char2.blost += 1
             dur = self.duration(gain)
-            nl = self.nextlevel(char1)
             # Convoluted logic that I wrote years ago in Perl...
             if p1roll < 51 and p1sum > 299 and p2sum > 299:
                 output_text += " and won!"
@@ -966,6 +962,7 @@ class IdleRPG(discord.Client):
                     output_text += " and rocked it!"
                 elif battle_message == 2:
                     output_text += " and gave 'em what was coming!"
+            nl = self.nextlevel(char1)
             output_text += f"\n{dur} is removed from {char1.username}'s clock. {nl}"
             await self.gamechan.send(output_text)
             # Critical Strike chance if p1 rolled 85+% of max and p2 rolled 15-% theirs
@@ -981,7 +978,6 @@ class IdleRPG(discord.Client):
             char1.fightlost(gain)
             char2.bwon += 1
             dur = self.duration(gain)
-            nl = self.nextlevel(char1)
             if p2roll < 51 and p1sum > 299 and p2sum > 299:
                 output_text += " and loses!"
             elif p1roll + 300 < p2roll and p1sum > 299:
@@ -994,6 +990,7 @@ class IdleRPG(discord.Client):
                     output_text += " and realized it was a bad decision!"
                 elif battle_message == 2:
                     output_text += " and didn't wake up till the next morning!"
+            nl = self.nextlevel(char1)
             output_text += f"\n{dur} is added to {char1.username}'s clock. {nl}"
             await self.gamechan.send(output_text)
             # Critical Strike chance if p2 rolled 85+% of max and p1 rolled 15-% theirs
@@ -1214,15 +1211,16 @@ class IdleRPG(discord.Client):
         level = char.level
         gain = int(oppsum * (level / 10))
         dur = self.duration(gain)
-        nextlevel = self.nextlevel(char)
         if p1roll >= opproll:
             char.fightwon(gain)
             char.addgold(10)
+            nextlevel = self.nextlevel(char)
             await self.gamechan.send(
                 f"{output} wins! {dur} removed from {char.username}'s time and 10 gold added. {nextlevel}"
             )
         else:
             char.fightlost(gain)
+            nextlevel = self.nextlevel(char)
             await self.gamechan.send(f"{output} lost! {dur} added to {char.username}'s time. {nextlevel}")
         self.characters.update(char)
         devmsg('ended')
