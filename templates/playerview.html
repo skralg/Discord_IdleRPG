@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Player Info</h1>
+<p>
+    <b>User:</b> {{context.character.username}}<br/>
+    <b>Class:</b> {{context.character.charclass}}<br/>
+    <b>Admin?:</b> {% if context.character.is_admin %}Yes{% else %}No{% endif %}<br/>
+    <b>Level:</b> {{context.character.level}}<br/>
+    <b>Next level:</b> {{context.character.next_level_duration()}}<br/>
+    <b>Status:</b> {% if context.character.online %}Online{% else %}Offline{% endif %}<br/>
+    <b>Host:</b> {{context.character.username}}!{{context.character.username}}@{{context.character.userhost}}<br/>
+    <b>Account Created:</b> {{context.character.timestamp(context.character.created)}}<br/>
+    <b>Last login:</b> {{context.character.timestamp(context.character.lastlogin)}}<br/>
+    <b>Total time idled:</b> {{context.character.idled_duration()}}<br/>
+    <b>Current position:</b> [{{context.character.x_pos}},{{context.character.y_pos}}]<br/>
+    <b>Alignment:</b> {% if context.character.alignment=="g" %}Good{% elif context.character.alignment=="n" %}Neutral{% else %}Evil{% endif %}<br/>
+    <!--XML Link-->
+</p>
+<p>
+<!-- Map link -->
+</p>
+<h2>Items</h2>
+<p>
+    amulet: {{context.character.amulet}}<br/>
+    boots: {{context.character.boots}}<br/>
+    charm: {{context.character.charm}}<br/>
+    gloves: {{context.character.gloves}}<br/>
+    helm: {{context.character.helm}}<br/>
+    legs: {{context.character.legs}}<br/>
+    ring: {{context.character.ring}}<br/>
+    shield: {{context.character.shield}}<br/>
+    tunic: {{context.character.tunic}}<br/>
+    weapon: {{context.character.weapon}}<br/>
+    <br/>
+    sum: {{context.character.itemsum()}}<br/>
+</p>
+<h2>Penalties</h2>
+<p>
+    kick: {% if context.character.pen_kick %}{{context.character.duration(context.character.pen_kick)}}{% else %}None{% endif %}<br/>
+    logout: {% if context.character.pen_logout %}{{context.character.duration(context.character.pen_logout)}}{% else %}None{% endif %}<br/>
+    mesg: {% if context.character.pen_msg %}{{context.character.duration(context.character.pen_msg)}}{% else %}None{% endif %}<br/>
+    nick: {% if context.character.pen_nick %}{{context.character.duration(context.character.pen_nick)}}{% else %}None{% endif %}<br/>
+    part: {% if context.character.pen_part %}{{context.character.duration(context.character.pen_part)}}{% else %}None{% endif %}<br/>
+    quest: {% if context.character.pen_quest %}{{context.character.duration(context.character.pen_quest)}}{% else %}None{% endif %}<br/>
+    quit: {% if context.character.pen_quit %}{{context.character.duration(context.character.pen_quit)}}{% else %}None{% endif %}<br/>
+    <br/>
+    total: {{context.character.duration(context.character.pen_msg + context.character.pen_nick + context.character.pen_part + context.character.pen_kick + context.character.pen_quit + context.character.pen_quest + context.character.pen_logout)}}
+</p>
+{% endblock %}

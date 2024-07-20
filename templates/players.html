@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Players</h1>
+  <h2>Pick a player to view</h2>
+  <p class="small">[gray=offline]</p>
+<ol>
+{% for char in context.characters %}
+  <li{% if char.online == False %} class="offline"{% endif %}>
+    <a {% if char.online == False %}class="offline" {% endif %}href="playerview.html/{{ char.id }}">
+    {{ char.username|e }}</a>, the level {{char.level}} {{char.charclass|e}}. Next level in {{char.next_level_duration()}}.
+  </li>
+{% endfor %}
+</ol>
+  <p>See player stats in <a href="db.html">table format</a>.</p>
+{% endblock %}

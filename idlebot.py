@@ -4,6 +4,7 @@ Endpoints will connect directly to the MQ as well, allowing them to restart
 without affecting the game engine itself.
 """
 import asyncio
+from threading import Thread
 import characters
 import discord
 import logging
@@ -11,15 +12,9 @@ import math
 import os
 import sqlite3
 import time
-import typing
-import uvicorn
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from jinja2 import Environment
+from quart import Quart, request, render_template
 from random import choice, randint, seed, uniform
 
 from devmsg import devmsg
@@ -1561,44 +1556,14 @@ class IdleRPG(discord.Client):
         devmsg(f"after: {entry.after!r}")
 
 
-def start_uvicorn(loop):
-    # Set up Web Access using FastAPI
-    config = uvicorn.Config(
-        "idlebot:app",
-        loop=loop,
-        host=None,
-        port=80,
-        log_level="debug",
-        reload=True,
-    )
-    server = uvicorn.Server(config)
-    event_loop.run_until_complete(server.serve())
+# Set up Discord
+my_intents = discord.Intents.all()
+devmsg('instantiating game')
+game = IdleRPG(intents=my_intents)
 
+loop = asyncio.get_event_loop()
+app = Quart(__name__)
 
-def app_context(request: Request) -> typing.Dict[str, typing.Any]:
-    devmsg('hit')
-    return {
-        "app": request.app
-    }
-
-
-env = Environment(
-    extensions=['jinja2_time.TimeExtension'],
-    cache_size=0,
-    enable_async=True
-)
-env.cache = None
-app = FastAPI()
-script_dir = os.path.dirname(__file__)
-st_abs_file_path = os.path.join(script_dir, "static/")
-app.mount("/static", StaticFiles(directory=st_abs_file_path), name="static")
-templates = Jinja2Templates(
-    directory="templates",
-    auto_reload=True,
-    autoescape=False,
-    context_processors=[app_context],
-    env=env
-)
 navigation = {
     'Game Info': '/',
     'Player Info': '/players.html',
@@ -1608,49 +1573,65 @@ navigation = {
     'Site Source': 'https://idlerpg.net/sitesource.php',
     'World Map': '/worldmap.html',
     'Quest Info': '/quest.html',
-    'Forum': 'https://idlerpg.net/forum.php',
 }
 
-# Set up Discord
-my_intents = discord.Intents.all()
-game = IdleRPG(intents=my_intents)
-event_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(event_loop)
 
-# Start discord bot
-event_loop.create_task(game.start(os.getenv('DISCORD_TOKEN')))
-
-
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request):
+@app.route("/", methods=['GET'])
+async def index():
     # return FileResponse('static/index.html', media_type='text/html')
     pagedict = {
         "navigation": navigation,
         "title": "Game Info",
     }
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context=pagedict
-    )
+    return await render_template("index.html", context=pagedict)
 
 
-@app.get("/players.html", response_class=HTMLResponse)
-async def players(request: Request):
+@app.route("/players.html", methods=['GET'])
+async def players():
     pagedict = {
         "navigation": navigation,
         "title": "Player Info",
         "characters": await game.characters.topx(None),
     }
-    return templates.TemplateResponse(
-        request=request,
-        name="players.html",
-        context=pagedict
+    return await render_template(template_name_or_list="players.html", context=pagedict)
+
+
+@app.route("/jon", methods=['GET'])
+async def jon():
+    base = (
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "  <head>\n"
+        "    <title>Jon</title>\n"
+        "    <link rel='icon' type='image/x-icon' href='/static/favicon.ico'>\n"
+        "  </head>\n"
+        "  <body>\n"
+        "    <h1>Players</h1>\n"
+        "    <h2>Pick a player to view</h2>\n"
+        "    <p class='small'>[gray=offline]</p>\n"
+        "    <ol>\n"
     )
+    charlist = await game.characters.topx(None)
+    for char in charlist:
+        offline = ""
+        if char.online is False:
+            offline = " class='offline'"
+        base += f"      <li{offline}>\n"
+        base += f"        <a{offline} href='playerview.html/{char.id}'>{char.username}</a>,\n"
+        base += f"        the level {char.level} {char.charclass}.\n"
+        base += f"        Next level in {char.next_level_duration()}.\n"
+        base += "      </li>\n"
+    base += (
+        "    </ol>\n"
+        "    <p>See player stats in <a href='db.html'>table format</a>.</p>\n"
+        "  </body>\n"
+        "</html>\n"
+    )
+    return base
 
 
-@app.get("/db.html", response_class=HTMLResponse)
-def db(request: Request):
+@app.route("/db.html", methods=['GET'])
+async def db():
     chars = game.characters.webchars()
     pagedict = {
         "request": request,
@@ -1659,25 +1640,32 @@ def db(request: Request):
         "characters": chars,
         "rows": len(chars),
     }
-    # return templates.TemplateResponse("db.html", pagedict)
-    return templates.get_template("db.html").render(pagedict)
+    return await render_template(template_name_or_list="db.html", context=pagedict)
 
 
-@app.get("/playerview.html/{player_id}", response_class=HTMLResponse)
-def playerview(request: Request, player_id: int):
+@app.route("/playerview.html/<int:player_id>", methods=['GET'])
+async def playerview(player_id: int):
     char = game.characters.find(player_id=player_id)
     pagedict = {
         "navigation": navigation,
         "title": "Player Info: " + char.username,
         "character": char,
     }
-    return templates.TemplateResponse(
-        request=request,
-        name="playerview.html",
-        context=pagedict
-    )
+    return await render_template(template_name_or_list="playerview.html", context=pagedict)
 
 
+def main():
+    devmsg('creating task for discord bot...')
+    loop.create_task(game.start(os.getenv('DISCORD_TOKEN')))
+    devmsg('creating task for web server...')
+    loop.create_task(app.run_task(debug=True, host="127.0.0.1", port="80"))
+    devmsg('OOPS')
+    loop.run_forever()
+
+
+devmsg(f"Name: {__name__}")
 if __name__ == '__main__':
-    # Set up FastAPI webserver
-    start_uvicorn(event_loop)
+    # Start the Discord bot in a separate loop from Flask
+    devmsg('starting?')
+    main()
+    devmsg('ended?')

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block content %}
+<table border="1" cellpadding="2" cellspacing="2" cols="32" rows="{{rows}}">
+      <tr>
+    <th nowrap>
+      User
+      (<a href="db.html?sort=cmp_user_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_user_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Level
+      (<a href="db.html?sort=cmp_level_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_level_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Admin
+      (<a href="db.html?sort=cmp_isadmin_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_isadmin_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>Class</th>
+    <th nowrap>
+      TTL
+      (<a href="db.html?sort=cmp_ttl_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_ttl_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Nick!User@Host
+      (<a href="db.html?sort=cmp_uhost_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_uhost_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Online
+      (<a href="db.html?sort=cmp_online_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_online_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Total Time Idled
+      (<a href="db.html?sort=cmp_idled_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_idled_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>X Pos</th>
+    <th nowrap>Y Pos</th>
+    <th nowrap>Mesg Pen.</th>
+    <th nowrap>Nick Pen.</th>
+    <th nowrap>Part Pen.</th>
+    <th nowrap>Kick Pen.</th>
+    <th nowrap>Quit Pen.</th>
+    <th nowrap>Quest Pen.</th>
+    <th nowrap>Logout Pen.</th>
+    <th nowrap>
+      Total Pen.
+      (<a href="db.html?sort=cmp_pen_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_pen_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Acct. Created
+      (<a href="db.html?sort=cmp_created_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_created_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Last Login
+      (<a href="db.html?sort=cmp_lastlogin_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_lastlogin_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>Amulet</th>
+    <th nowrap>Charm</th>
+    <th nowrap>Helm</th>
+    <th nowrap>Boots</th>
+    <th nowrap>Gloves</th>
+    <th nowrap>Ring</th>
+    <th nowrap>Leggings</th>
+    <th nowrap>Shield</th>
+    <th nowrap>Tunic</th>
+    <th nowrap>Weapon</th>
+    <th nowrap>
+      Sum
+      (<a href="db.html?sort=cmp_sum_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_sum_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+    <th nowrap>
+      Alignment
+      (<a href="db.html?sort=cmp_alignment_asc">
+         <img src="/static/up.png" border="0">
+       </a>
+       /
+      <a href="db.html?sort=cmp_alignment_desc">
+         <img src="/static/down.png" border="0">
+      </a>)
+    </th>
+  </tr>
+{% for char in context.characters.values() %}
+<tr>
+    <td nowrap>{{char.username|e}}</td>
+    <td>{{char.level}}</td>
+    <td nowrap>{% if char.is_admin %}Yes{% else %}No{% endif %}</td>
+    <td nowrap>{{char.charclass}}</td>
+    <td nowrap>{{char.next_level_duration()}}</td>
+    <td nowrap>{{char.nick}}!{{char.username}}@{{char.userhost}}</td>
+    <td nowrap>{% if char.online %}Yes{% else %}No{% endif %}</td>
+    <td nowrap>{{char.idled_duration()}}</td>
+    <td>{{char.x_pos}}</td>
+    <td>{{char.y_pos}}</td>
+    <td nowrap>{% if char.pen_msg == 0 %}None{% else %}{{char.duration(char.pen_msg)}}{% endif %}</td>
+    <td nowrap>{% if char.pen_nick == 0 %}None{% else %}{{char.duration(char.pen_nick)}}{% endif %}</td>
+    <td nowrap>{% if char.pen_part == 0 %}None{% else %}{{char.duration(char.pen_part)}}{% endif %}</td>
+    <td nowrap>{% if char.pen_kick == 0 %}None{% else %}{{char.duration(char.pen_kick)}}{% endif %}</td>
+    <td nowrap>{% if char.pen_quit == 0 %}None{% else %}{{char.duration(char.pen_quit)}}{% endif %}</td>
+    <td nowrap>{% if char.pen_quest == 0 %}None{% else %}{{char.duration(char.pen_quest)}}{% endif %}</td>
+    <td nowrap>{% if char.pen_logout == 0 %}None{% else %}{{char.duration(char.pen_logout)}}{% endif %}</td>
+    <td>{{char.duration(char.pen_msg + char.pen_nick + char.pen_part + char.pen_kick + char.pen_quit + char.pen_quest + char.pen_logout)}}</td>
+    <td nowrap>{{char.timestamp(char.created)}}</td>
+    <td nowrap>{{char.timestamp(char.lastlogin)}}</td>
+    <td>{{char.amulet}}</td>
+    <td>{{char.charm}}</td>
+    <td>{{char.helm}}</td>
+    <td>{{char.boots}}</td>
+    <td>{{char.gloves}}</td>
+    <td>{{char.ring}}</td>
+    <td>{{char.legs}}</td>
+    <td>{{char.shield}}</td>
+    <td>{{char.tunic}}</td>
+    <td>{{char.weapon}}</td>
+    <td>{{char.itemsum()}}</td>
+    <td>{% if char.alignment=="n" %}Neutral{% elif char.alignment=="g" %}Good{% else %}Evil{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}
