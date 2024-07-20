@@ -2,6 +2,7 @@
 This file contains all the things needed to manage a single character
 """
 import math
+from datetime import datetime
 from devmsg import devmsg
 
 
@@ -188,12 +189,63 @@ class Character:
         :param seconds: a count of seconds
         :return: human-readable duration of said seconds
         """
-        if seconds is None or seconds <= 0:
-            return 'a moment'
-        return '%d day%s, %02d:%02d:%02d' % (
-            seconds / 86400,
-            '' if math.trunc(seconds / 86400) == 1 else 's',
-            (seconds % 86400) / 3600,
-            (seconds % 3600) / 60,
-            (seconds % 60)
-        )
+        second  = 1
+        minute  = second * 60
+        hour    = minute * 60
+        day     = hour * 24
+        year    = day * 365
+        decade  = year * 10
+        century = decade * 10
+        sections = []
+        # Optional sections
+        if seconds >= century:
+            centuries = math.trunc(seconds / century)
+            if centuries == 1:
+                sections.append("1 century")
+            else:
+                sections.append(f"{centuries} centuries")
+            seconds -= centuries * century
+        if seconds >= decade:
+            decades = math.trunc(seconds / decade)
+            if decades == 1:
+                sections.append("1 decade")
+            else:
+                sections.append(f"{decades} decades")
+            seconds -= decades * decade
+        if seconds >= year:
+            years = math.trunc(seconds / year)
+            if years == 1:
+                sections.append("1 year")
+            else:
+                sections.append(f"{years} years")
+            seconds -= years * year
+        # Required sections
+        sections.append('%d day%s, %02d:%02d:%02d' % (
+            seconds / day,
+            '' if math.trunc(seconds / day) == 1 else 's',
+            (seconds %   day) / hour,
+            (seconds %  hour) / minute,
+            (seconds %  minute)
+        ))
+        return ", ".join(sections)
+
+    def next_level_duration(self):
+        """
+        :return: human-readable string of the duration of next_ttl
+        """
+        return self.duration(self.next_ttl)
+
+    def idled_duration(self):
+        """
+        :return: human-readable string of the total time this character has idled
+        """
+        return self.duration(self.idled)
+
+    @staticmethod
+    def timestamp(unixtime):
+        """
+        Convert unixtime to a date/time string
+        :param unixtime: seconds since epoch
+        :return: string representation of unixtime
+        """
+        return datetime.utcfromtimestamp(int(unixtime)).strftime('%c')

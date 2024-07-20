@@ -2,6 +2,7 @@
 This file contains all the necessary bits to manage list of game characters
 """
 import character
+import math
 import time
 from devmsg import devmsg
 from operator import attrgetter
@@ -55,7 +56,7 @@ class Characters:
             'is_admin': 0,
             'level': 0,
             'charclass': 'IdleRPG Player',
-            'next_ttl': 600, # rpbase
+            'next_ttl': 600,  # rpbase
             'nick': name,
             'userhost': player_id,
             'online': online,
@@ -117,7 +118,8 @@ class Characters:
 
     def load(self):
         """
-        Load all the characters from the database
+        Load all the characters from the database.  Set their online to 0.
+        If a character is found as not offline when we join, we'll toggle it.
         :return: None
         """
         devmsg('loading...')
@@ -130,6 +132,7 @@ class Characters:
             for index in range(0, colcount):
                 # devmsg(f"{cols[index]}: {row[index]}")
                 chardict[cols[index]] = row[index]
+            chardict['online'] = 0
             char = self.add(chardict)
             # devmsg(f"char: {char}")
         cursor.close()
@@ -244,6 +247,7 @@ class Characters:
         :param charsumplus:  Filter by character itemsum >= charsum
         :param charsumminus: Filter by character itemsum <= charsum
         :param notnamed:     Filter by character username != notnamed
+        :param debug:        Emit debug log messages
         :return: List of character IDs
         """
         char_list = []
@@ -326,15 +330,33 @@ class Characters:
         self.chars[user_id].online = status
         return status
 
-    def topx(self, count=5):
+    async def topx(self, count=5):
         """
         Return the character objects, sorted by highest level and lowest ttl
-        :param count: Limit the list to the top count, defaults to 5
+        :param count: Limit the list to the top count, defaults to 5. None for all.
         :return: list of character objects
         """
+        devmsg('started')
         timered = sorted(self.chars.values(), key=attrgetter('next_ttl'))
         leveled = sorted(timered, key=attrgetter('level'), reverse=True)
+        devmsg("0's ttl: " + str(leveled[0].next_ttl))
+        devmsg('ended')
+        if count is None:
+            return leveled
         return leveled[:count]
+
+    def webchars(self):
+        """
+        Return all the characters, sorted as topx, in a mutable dict format
+        suitable for jinja2 templates
+        :return: dict of character ids to character objects
+        """
+        devmsg('started')
+        timered = sorted(self.chars.values(), key=attrgetter('next_ttl'))
+        leveled = sorted(timered, key=attrgetter('level'), reverse=True)
+        devmsg("0's ttl: " + str(leveled[0].next_ttl))
+        devmsg('ended')
+        return {x.id: x for x in leveled}
 
 
 """

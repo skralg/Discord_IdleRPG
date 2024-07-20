@@ -1,3 +1,8 @@
+"""
+This is the engine that connects to the MQ. All game logic is done here.
+Endpoints will connect directly to the MQ as well, allowing them to restart
+without affecting the game engine itself.
+"""
 import asyncio
 import characters
 import discord
@@ -6,14 +11,21 @@ import math
 import os
 import sqlite3
 import time
+import typing
+import uvicorn
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from jinja2 import Environment
+from random import choice, randint, seed, uniform
 
 from devmsg import devmsg
-from dotenv import load_dotenv
-from random import choice, randint, seed, uniform
 
 logging.basicConfig(level=logging.INFO)
 load_dotenv()
-
 seed()  # seed random generator
 
 
@@ -36,7 +48,7 @@ class IdleRPG(discord.Client):
     gamechan = None    # This text channel object will be filled in via on_ready()
     bg_task = None     # This gets set to loop the main loop
 
-    # Server roles. Default to none, will load when the bot is connects
+    # Server roles. Default to none, will load when the bot is connected
     role_online = None
     role_idle = None
     role_dnd = None
@@ -50,12 +62,13 @@ class IdleRPG(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dbh = sqlite3.connect('irpg.db')
-        self.characters = None
+        self.characters = characters.Characters(self.dbh)
+        self.characters.load()
 
     async def setup_hook(self) -> None:
         devmsg('Setting up environment...')
-        self.characters = characters.Characters(self.dbh)
-        self.characters.load()
+        # self.characters = characters.Characters(self.dbh)
+        # self.characters.load()
         # TODO: set up monsters
         # TODO: set up items
         # TODO: load map items
@@ -1428,7 +1441,7 @@ class IdleRPG(discord.Client):
         devmsg('ended')
 
     async def topx(self, count=5):
-        chars = self.characters.topx(count)
+        chars = await self.characters.topx(count)
         lines = [f'Idle RPG Top {count} Players:']
         x = 1
         for char in chars:
@@ -1548,8 +1561,123 @@ class IdleRPG(discord.Client):
         devmsg(f"after: {entry.after!r}")
 
 
-intents = discord.Intents.all()
-game = IdleRPG(intents=intents)
-game.run(os.getenv('DISCORD_TOKEN'))
+def start_uvicorn(loop):
+    # Set up Web Access using FastAPI
+    config = uvicorn.Config(
+        "idlebot:app",
+        loop=loop,
+        host=None,
+        port=80,
+        log_level="debug",
+        reload=True,
+    )
+    server = uvicorn.Server(config)
+    event_loop.run_until_complete(server.serve())
 
 
+def app_context(request: Request) -> typing.Dict[str, typing.Any]:
+    devmsg('hit')
+    return {
+        "app": request.app
+    }
+
+
+env = Environment(
+    extensions=['jinja2_time.TimeExtension'],
+    cache_size=0,
+    enable_async=True
+)
+env.cache = None
+app = FastAPI()
+script_dir = os.path.dirname(__file__)
+st_abs_file_path = os.path.join(script_dir, "static/")
+app.mount("/static", StaticFiles(directory=st_abs_file_path), name="static")
+templates = Jinja2Templates(
+    directory="templates",
+    auto_reload=True,
+    autoescape=False,
+    context_processors=[app_context],
+    env=env
+)
+navigation = {
+    'Game Info': '/',
+    'Player Info': '/players.html',
+    'Contact': '/contact.html',
+    'Source': 'https://idlerpg.net/source.php',
+    'Other IRPGs': 'https://idlerpg.net/others.php',
+    'Site Source': 'https://idlerpg.net/sitesource.php',
+    'World Map': '/worldmap.html',
+    'Quest Info': '/quest.html',
+    'Forum': 'https://idlerpg.net/forum.php',
+}
+
+# Set up Discord
+my_intents = discord.Intents.all()
+game = IdleRPG(intents=my_intents)
+event_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(event_loop)
+
+# Start discord bot
+event_loop.create_task(game.start(os.getenv('DISCORD_TOKEN')))
+
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    # return FileResponse('static/index.html', media_type='text/html')
+    pagedict = {
+        "navigation": navigation,
+        "title": "Game Info",
+    }
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context=pagedict
+    )
+
+
+@app.get("/players.html", response_class=HTMLResponse)
+async def players(request: Request):
+    pagedict = {
+        "navigation": navigation,
+        "title": "Player Info",
+        "characters": await game.characters.topx(None),
+    }
+    return templates.TemplateResponse(
+        request=request,
+        name="players.html",
+        context=pagedict
+    )
+
+
+@app.get("/db.html", response_class=HTMLResponse)
+def db(request: Request):
+    chars = game.characters.webchars()
+    pagedict = {
+        "request": request,
+        "navigation": navigation,
+        "title": "Db-style Player Listing",
+        "characters": chars,
+        "rows": len(chars),
+    }
+    # return templates.TemplateResponse("db.html", pagedict)
+    return templates.get_template("db.html").render(pagedict)
+
+
+@app.get("/playerview.html/{player_id}", response_class=HTMLResponse)
+def playerview(request: Request, player_id: int):
+    char = game.characters.find(player_id=player_id)
+    pagedict = {
+        "navigation": navigation,
+        "title": "Player Info: " + char.username,
+        "character": char,
+    }
+    return templates.TemplateResponse(
+        request=request,
+        name="playerview.html",
+        context=pagedict
+    )
+
+
+if __name__ == '__main__':
+    # Set up FastAPI webserver
+    start_uvicorn(event_loop)
