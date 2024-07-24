@@ -144,8 +144,10 @@ class Characters:
         :return: None
         """
         for char_id in self.chars:
-            self.update(char_id)
-        # devmsg('updated whole db')
+            char = self.chars[char_id]
+            # devmsg(f"updating {char.nick}")
+            self.update(char)
+        devmsg('updated whole db')
 
     def zero(self):
         for char in self.chars.values():

@@ -10,6 +10,7 @@ import discord
 import logging
 import math
 import os
+import signal
 import sqlite3
 import time
 
@@ -19,6 +20,7 @@ from random import choice, randint, seed, uniform
 
 from devmsg import devmsg
 
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 logging.basicConfig(level=logging.INFO)
 load_dotenv()
 seed()  # seed random generator
@@ -50,6 +52,8 @@ class IdleRPG(discord.Client):
 
     # Track our loop so we don't get multiples started
     loop_started = False
+
+    running = True
 
     # Items on the map. Dict of dicts of a list of dicts. It really does make sense.
     map_items = {}
@@ -148,112 +152,105 @@ class IdleRPG(discord.Client):
     async def on_message(self, message):
         if message.author.id == self.user.id:
             return
-        else:
-            char = self.characters.find(message.author)
-            # devmsg(f"char({char.username}) chan({message.channel.name}) message({message.content})")
-            if message.channel.name == 'idlerpg':
-                devmsg(message)
-                devmsg(message.content)
-                pen = self.penalize(char, 'message', len(message.content))
-                dur = self.duration(pen)
-                await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for a message.")
+        chan = message.channel
+        char = self.characters.find(message.author)
+        content = message.content
+        # devmsg(f"char({char.username}) chan({chan.name}) message({message.content})")
+        if chan.name == 'idlerpg':
+            devmsg(message)
+            devmsg(content)
+            pen = self.penalize(char, 'message', len(content))
+            dur = self.duration(pen)
+            await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for a message.")
+
+        elif chan.name == 'bot-commands':
+            # implement bot commands, like !whoami
+
+            ##################
+            # Admin commands #
+            ##################
+            if char.is_admin != 0:
+                if content == '!test_celeb':
+                    await self.celebrity_fight()
+                elif content == '!save':
+                    await chan.send("Saving all characters...")
+                    self.characters.updatedb()
+                    await chan.send("...all characters saved")
+                elif content == '!shutdown':
+                    await chan.send("Saving all characters...")
+                    self.characters.updatedb()
+                    await chan.send("Shutting down.")
+                    self.running = False
+                    await self.close()
+                elif content == '!godsend':
+                    await self.godsend()
+                elif content == '!random_challenge':
+                    char = self.random_online_char()
+                    await self.random_challenge(char)
+                elif content == '!test_calamity':
+                    await self.calamity()
+                elif content == '!monster_attack':
+                    await self.monster_attack()
+                elif content == '!test_cs':
+                    simple = self.characters.chars[181563324599762944]
+                    seiyria = self.characters.chars[122862594724855808]
+                    await self.try_critical_strike(simple, seiyria)
+                elif content == '!test_id':
+                    simple = self.characters.chars[181563324599762944]
+                    seiyria = self.characters.chars[122862594724855808]
+                    await self.try_item_drop(simple, seiyria)
+                elif content == '!test_itemdrop':
+                    simple = self.characters.chars[181563324599762944]
+                    await self.find_item(simple)
+                elif content == '!test_collision':
+                    simple = self.characters.chars[181563324599762944]
+                    seiyria = self.characters.chars[122862594724855808]
+                    await self.collision_fight(simple, seiyria)
+                elif content == '!top5':
+                    await self.topx(5)
+                elif content == '!hog':
+                    await self.hand_of_god()
+                elif content == '!random_gold':
+                    await self.random_gold()
+                elif content == '!reset':
+                    # TODO: reset quest once quest implemented
+                    # TODO: reset tournament if implemented and one is running
+                    # TODO: clear team stats, once implemented
+                    self.characters.zero()
+                    await self.gamechan.send("** Game Reset! **")
                 return
 
-            elif message.channel.name == 'bot-commands':
-                # implement bot commands, like !whoami
-
-                ##################
-                # Admin commands #
-                ##################
-                if char.is_admin != 0:
-                    if message.content == '!test_celeb':
-                        await self.celebrity_fight()
-                        return
-                    elif message.content == '!godsend':
-                        await self.godsend()
-                        return
-                    elif message.content == '!random_challenge':
-                        char = self.random_online_char()
-                        await self.random_challenge(char)
-                        return
-                    elif message.content == '!test_calamity':
-                        await self.calamity()
-                        return
-                    elif message.content == '!monster_attack':
-                        await self.monster_attack()
-                        return
-                    elif message.content == '!test_cs':
-                        simple = self.characters.chars[181563324599762944]
-                        seiyria = self.characters.chars[122862594724855808]
-                        await self.try_critical_strike(simple, seiyria)
-                        return
-                    elif message.content == '!test_id':
-                        simple = self.characters.chars[181563324599762944]
-                        seiyria = self.characters.chars[122862594724855808]
-                        await self.try_item_drop(simple, seiyria)
-                        return
-                    elif message.content == '!test_itemdrop':
-                        simple = self.characters.chars[181563324599762944]
-                        await self.find_item(simple)
-                        return
-                    elif message.content == '!test_collision':
-                        simple = self.characters.chars[181563324599762944]
-                        seiyria = self.characters.chars[122862594724855808]
-                        await self.collision_fight(simple, seiyria)
-                        return
-                    elif message.content == '!top5':
-                        await self.topx(5)
-                        return
-                    elif message.content == '!hog':
-                        await self.hand_of_god()
-                        return
-                    elif message.content == '!random_gold':
-                        await self.random_gold()
-                        return
-                    elif message.content == '!reset':
-                        # TODO: reset quest once quest implemented
-                        # TODO: reset tournament if implemented and one is running
-                        # TODO: clear team stats, once implemented
-                        self.characters.zero()
-                        await self.gamechan.send("** Game Reset! **")
-                        return
-
-                ###################
-                # Member commands #
-                ###################
-                if message.content.startswith('!class '):
-                    new_class = message.content.split(' ', 1)[1]
-                    char.charclass = new_class
+            ###################
+            # Member commands #
+            ###################
+            if content.startswith('!class '):
+                new_class = content.split(' ', 1)[1]
+                char.charclass = new_class
+                self.characters.update(char)
+                await message.reply(f"Your class was changed to '{new_class}'", mention_author=True)
+            elif content.startswith('!gender ') or content.startswith('!sex '):
+                new_gender = content.split(' ', 1)[1]
+                char.sex = new_gender
+                self.characters.update(char)
+                await message.reply(f"Your gender was changed to '{new_gender}'", mention_author=True)
+            elif content.startswith('!align '):
+                new_align = content.split(' ', 1)[1]
+                if new_align == 'g' or new_align == 'n' or new_align == 'e':
+                    char.alignment = new_align
                     self.characters.update(char)
-                    await message.reply(f"Your class was changed to '{new_class}'", mention_author=True)
-                    return
-                elif message.content.startswith('!gender ') or message.content.startswith('!sex '):
-                    new_gender = message.content.split(' ', 1)[1]
-                    char.sex = new_gender
-                    self.characters.update(char)
-                    await message.reply(f"Your gender was changed to '{new_gender}'", mention_author=True)
-                    return
-                elif message.content.startswith('!align '):
-                    new_align = message.content.split(' ', 1)[1]
-                    if new_align == 'g' or new_align == 'n' or new_align == 'e':
-                        char.alignment = new_align
-                        self.characters.update(char)
-                        await message.reply(f"Your alignment was changed to '{new_align}'", mention_author=True)
-                    else:
-                        await message.reply(
-                            f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True
-                        )
-                    return
-                elif message.content.startswith('!whoami'):
-                    devmsg(f"{char.username} did whoami")
-                    await message.reply(char.whoami())
-                    return
-
-                elif message.content.startswith('!'):
-                    await message.channel.send('Unrecognized bot command, perhaps?')
-                    devmsg(f"failed bot command: {message.content} with user roles: {message.author.roles!r}")
+                    await message.reply(f"Your alignment was changed to '{new_align}'", mention_author=True)
                 else:
-                    return
+                    await message.reply(
+                        f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True
+                    )
+            elif content.startswith('!whoami'):
+                devmsg(f"{char.username} did whoami")
+                await message.reply(char.whoami())
+            
+            elif content.startswith('!'):
+                await chan.send('Unrecognized bot command, perhaps?')
+                devmsg(f"failed bot command: {message.content} with user roles: {message.author.roles!r}")
+        return
 
     async def on_message_edit(self, before, after):
         # devmsg(f'a message was edited from {before} to {after}')
@@ -463,8 +460,11 @@ class IdleRPG(discord.Client):
         # devmsg('sleeping')
         await asyncio.sleep(self.self_clock)
         # devmsg('creating task')
-        self.bg_task = self.loop.create_task(self.mainloop())
-        # devmsg('ended')
+        if self.running:
+            self.bg_task = self.loop.create_task(self.mainloop())
+        else:
+            devmsg('ended')
+            exit(0)
 
     async def rpcheck(self):
         """
@@ -1658,14 +1658,10 @@ def main():
     devmsg('creating task for discord bot...')
     loop.create_task(game.start(os.getenv('DISCORD_TOKEN')))
     devmsg('creating task for web server...')
-    loop.create_task(app.run_task(debug=True, host="127.0.0.1", port="80"))
-    devmsg('OOPS')
+    loop.create_task(app.run_task(debug=True, host="10.47.73.81", port="3965"))
     loop.run_forever()
 
 
-devmsg(f"Name: {__name__}")
 if __name__ == '__main__':
     # Start the Discord bot in a separate loop from Flask
-    devmsg('starting?')
     main()
-    devmsg('ended?')
