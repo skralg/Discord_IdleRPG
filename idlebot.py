@@ -150,6 +150,7 @@ class IdleRPG(discord.Client):
             self.bg_task = self.loop.create_task(self.mainloop())
 
     async def on_message(self, message):
+        # devmsg(f"message: {message}")
         if message.author.id == self.user.id:
             return
         chan = message.channel
@@ -164,76 +165,96 @@ class IdleRPG(discord.Client):
             await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for a message.")
 
         elif chan.name == 'bot-commands':
+            # devmsg('bot-commands channel entry')
             # implement bot commands, like !whoami
 
             ##################
             # Admin commands #
             ##################
             if char.is_admin != 0:
+                devmsg('char is admin...')
                 if content == '!test_celeb':
                     await self.celebrity_fight()
+                    return
                 elif content == '!save':
                     await chan.send("Saving all characters...")
                     self.characters.updatedb()
                     await chan.send("...all characters saved")
+                    return
                 elif content == '!shutdown':
                     await chan.send("Saving all characters...")
                     self.characters.updatedb()
                     await chan.send("Shutting down.")
                     self.running = False
                     await self.close()
+                    return
                 elif content == '!godsend':
                     await self.godsend()
+                    return
                 elif content == '!random_challenge':
                     char = self.random_online_char()
                     await self.random_challenge(char)
+                    return
                 elif content == '!test_calamity':
                     await self.calamity()
+                    return
                 elif content == '!monster_attack':
                     await self.monster_attack()
+                    return
                 elif content == '!test_cs':
                     simple = self.characters.chars[181563324599762944]
                     seiyria = self.characters.chars[122862594724855808]
                     await self.try_critical_strike(simple, seiyria)
+                    return
                 elif content == '!test_id':
                     simple = self.characters.chars[181563324599762944]
                     seiyria = self.characters.chars[122862594724855808]
                     await self.try_item_drop(simple, seiyria)
+                    return
                 elif content == '!test_itemdrop':
                     simple = self.characters.chars[181563324599762944]
                     await self.find_item(simple)
+                    return
                 elif content == '!test_collision':
                     simple = self.characters.chars[181563324599762944]
                     seiyria = self.characters.chars[122862594724855808]
                     await self.collision_fight(simple, seiyria)
+                    return
                 elif content == '!top5':
                     await self.topx(5)
+                    return
                 elif content == '!hog':
                     await self.hand_of_god()
+                    return
                 elif content == '!random_gold':
                     await self.random_gold()
+                    return
                 elif content == '!reset':
                     # TODO: reset quest once quest implemented
                     # TODO: reset tournament if implemented and one is running
                     # TODO: clear team stats, once implemented
                     self.characters.zero()
                     await self.gamechan.send("** Game Reset! **")
-                return
+                    return
 
             ###################
             # Member commands #
             ###################
+            devmsg(f"content: {content}")
             if content.startswith('!class '):
+                devmsg(f"{char.username} did class")
                 new_class = content.split(' ', 1)[1]
                 char.charclass = new_class
                 self.characters.update(char)
                 await message.reply(f"Your class was changed to '{new_class}'", mention_author=True)
             elif content.startswith('!gender ') or content.startswith('!sex '):
+                devmsg(f"{char.username} did gender")
                 new_gender = content.split(' ', 1)[1]
                 char.sex = new_gender
                 self.characters.update(char)
                 await message.reply(f"Your gender was changed to '{new_gender}'", mention_author=True)
             elif content.startswith('!align '):
+                devmsg(f"{char.username} did align")
                 new_align = content.split(' ', 1)[1]
                 if new_align == 'g' or new_align == 'n' or new_align == 'e':
                     char.alignment = new_align
@@ -248,8 +269,14 @@ class IdleRPG(discord.Client):
                 await message.reply(char.whoami())
             
             elif content.startswith('!'):
+                devmsg('unrecognized !')
                 await chan.send('Unrecognized bot command, perhaps?')
-                devmsg(f"failed bot command: {message.content} with user roles: {message.author.roles!r}")
+                devmsg(f"failed bot command: {content} with user roles: {message.author.roles!r}")
+            else:
+                devmsg('unrecognized something')
+                # await chan.send(f'Unrecognized entry {content}')
+        else:
+            devmsg(f'weird thing happened on {chan.name}')
         return
 
     async def on_message_edit(self, before, after):
@@ -1258,7 +1285,7 @@ class IdleRPG(discord.Client):
             elif type == 'weapon':
                 output = f"{name} sharpened the edge of {hisher} weapon! {HisHer} weapon gains 10% effectiveness."
             elif type == 'helm':
-                output = f"{name} beat the dents out of {hisher} helm! {HisHer} helm is not 10% stronger."
+                output = f"{name} beat the dents out of {hisher} helm! {HisHer} helm is now 10% stronger."
             elif type == 'tunic':
                 output = f"A magician cast a spell of Rigidity on {name}'s tunic! " \
                          f"{HisHer} tunic gains 10% effectiveness."
@@ -1273,11 +1300,11 @@ class IdleRPG(discord.Client):
                          f"{HisHer} shidle gains 10% effectiveness."
             elif type == 'boots':
                 output = f"{name} stepped in some unicorn poo. It was gross to clean up, " \
-                         f"but the boots are not 10% more effective."
+                         f"but the boots are now 10% more effective."
 
             rawitem = char.get_item(type)
             prefix, level, suffix = self.item_parse(rawitem)
-            newlevel = int(level * 1.1)
+            newlevel = int(float(level) * 1.1)
             char.set_item(type, f"{prefix}{newlevel}{suffix}")
             await self.gamechan.send(output)
 
@@ -1358,7 +1385,7 @@ class IdleRPG(discord.Client):
 
             rawitem = char.get_item(type)
             prefix, level, suffix = self.item_parse(rawitem)
-            newlevel = int(level * 0.9)
+            newlevel = int(float(level) * 0.9)
             char.set_item(type, f"{prefix}{newlevel}{suffix}")
             await self.gamechan.send(output)
 
