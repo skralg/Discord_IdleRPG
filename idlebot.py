@@ -191,12 +191,12 @@ class IdleRPG(discord.Client):
                 elif content == '!godsend':
                     await self.godsend()
                     return
+                elif content == '!calamity':
+                    await self.calamity()
+                    return
                 elif content == '!random_challenge':
                     char = self.random_online_char()
                     await self.random_challenge(char)
-                    return
-                elif content == '!test_calamity':
-                    await self.calamity()
                     return
                 elif content == '!monster_attack':
                     await self.monster_attack()
