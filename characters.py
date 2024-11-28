@@ -43,7 +43,7 @@ class Characters:
             player_id = member.id
         if player_id in self.chars:
             return self.chars[player_id]
-        # They don't exist, so we'll just add them right in against their will, possibly
+        # They don't exist, so we'll just add them right in, possibly against their will
         name = member.global_name
         if name is None:
             name = member.name

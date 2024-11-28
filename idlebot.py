@@ -135,19 +135,29 @@ class IdleRPG(discord.Client):
                 # devmsg(f'char: {tmp!r}')
                 # devmsg(f"member status: '{member.status!r}' and online: {tmp.online}")
                 await self.set_player_roles(member)
-                if member.raw_status == 'offline':
-                    if tmp.online == 1:
-                        tmp.online = 0  # set them offline
-                        self.characters.update(tmp)
-                else:
-                    if tmp.online == 0:
-                        tmp.online = 1  # set them online
-                        self.characters.update(tmp)
+                # Don't bother checking if it's already right, just overwrite and save
+                online = 0 if member.raw_status == 'offline' else 1
+                tmp.online = online
+                self.characters.update(tmp)
 
         devmsg('Game starting!')
         self.lasttime = int(time.time())
         if not self.loop_started:
             self.bg_task = self.loop.create_task(self.mainloop())
+
+
+    async def scan_users(self, message):
+        """Scan all members on the server and update status"""
+        guild = message.guild
+        for member in guild.members:
+            # tmp = self.characters.find(member)
+            if member.id in self.characters.chars:
+                online = 0 if member.raw_status == 'offline' else 1
+                char = self.characters.chars[member.id]
+                devmsg(f"online={online} member {member.global_name} is online={char.online} char {char!r}")
+            else:
+                devmsg(f"*** no char for {member!r}")
+
 
     async def on_message(self, message):
         # devmsg(f"message: {message}")
@@ -174,8 +184,9 @@ class IdleRPG(discord.Client):
             if char.is_admin != 0:
                 devmsg('char is admin...')
                 if content == '!test_celeb':
-                    await self.celebrity_fight()
-                    return
+                    return await self.celebrity_fight()
+                elif content == '!scan':
+                    return await self.scan_users(message)
                 elif content == '!save':
                     await chan.send("Saving all characters...")
                     self.characters.updatedb()
@@ -189,53 +200,41 @@ class IdleRPG(discord.Client):
                     await self.close()
                     return
                 elif content == '!godsend':
-                    await self.godsend()
-                    return
+                    return await self.godsend()
                 elif content == '!calamity':
-                    await self.calamity()
-                    return
+                    return await self.calamity()
                 elif content == '!random_challenge':
                     char = self.random_online_char()
-                    await self.random_challenge(char)
-                    return
+                    return await self.random_challenge(char)
                 elif content == '!monster_attack':
-                    await self.monster_attack()
-                    return
+                    return await self.monster_attack()
                 elif content == '!test_cs':
                     simple = self.characters.chars[181563324599762944]
                     seiyria = self.characters.chars[122862594724855808]
-                    await self.try_critical_strike(simple, seiyria)
-                    return
+                    return await self.try_critical_strike(simple, seiyria)
                 elif content == '!test_id':
                     simple = self.characters.chars[181563324599762944]
                     seiyria = self.characters.chars[122862594724855808]
-                    await self.try_item_drop(simple, seiyria)
-                    return
+                    return await self.try_item_drop(simple, seiyria)
                 elif content == '!test_itemdrop':
                     simple = self.characters.chars[181563324599762944]
-                    await self.find_item(simple)
-                    return
+                    return await self.find_item(simple)
                 elif content == '!test_collision':
                     simple = self.characters.chars[181563324599762944]
                     seiyria = self.characters.chars[122862594724855808]
-                    await self.collision_fight(simple, seiyria)
-                    return
+                    return await self.collision_fight(simple, seiyria)
                 elif content == '!top5':
-                    await self.topx(5)
-                    return
+                    return await self.topx(5)
                 elif content == '!hog':
-                    await self.hand_of_god()
-                    return
+                    return await self.hand_of_god()
                 elif content == '!random_gold':
-                    await self.random_gold()
-                    return
+                    return await self.random_gold()
                 elif content == '!reset':
                     # TODO: reset quest once quest implemented
                     # TODO: reset tournament if implemented and one is running
                     # TODO: clear team stats, once implemented
                     self.characters.zero()
-                    await self.gamechan.send("** Game Reset! **")
-                    return
+                    return await self.gamechan.send("** Game Reset! **")
 
             ###################
             # Member commands #
@@ -246,23 +245,33 @@ class IdleRPG(discord.Client):
                 new_class = content.split(' ', 1)[1]
                 char.charclass = new_class
                 self.characters.update(char)
-                await message.reply(f"Your class was changed to '{new_class}'", mention_author=True)
+                await message.reply(
+                    f"Your class was changed to '{new_class}'",
+                    mention_author=True
+                )
             elif content.startswith('!gender ') or content.startswith('!sex '):
                 devmsg(f"{char.username} did gender")
                 new_gender = content.split(' ', 1)[1]
                 char.sex = new_gender
                 self.characters.update(char)
-                await message.reply(f"Your gender was changed to '{new_gender}'", mention_author=True)
+                await message.reply(
+                    f"Your gender was changed to '{new_gender}'",
+                    mention_author=True
+                )
             elif content.startswith('!align '):
                 devmsg(f"{char.username} did align")
                 new_align = content.split(' ', 1)[1]
                 if new_align == 'g' or new_align == 'n' or new_align == 'e':
                     char.alignment = new_align
                     self.characters.update(char)
-                    await message.reply(f"Your alignment was changed to '{new_align}'", mention_author=True)
+                    await message.reply(
+                        f"Your alignment was changed to '{new_align}'",
+                        mention_author=True
+                    )
                 else:
                     await message.reply(
-                        f"Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.", mention_author=True
+                        "Alignment can be 'g' for good, 'n' for neutral, or 'e' for evil.",
+                        mention_author=True
                     )
             elif content.startswith('!whoami'):
                 devmsg(f"{char.username} did whoami")
@@ -271,13 +280,20 @@ class IdleRPG(discord.Client):
             elif content.startswith('!'):
                 devmsg('unrecognized !')
                 await chan.send('Unrecognized bot command, perhaps?')
-                devmsg(f"failed bot command: {content} with user roles: {message.author.roles!r}")
+                devmsg(
+                    f"failed bot command: {content} with user roles: "
+                    f"{message.author.roles!r}"
+                )
             else:
                 devmsg('unrecognized something')
                 # await chan.send(f'Unrecognized entry {content}')
         else:
-            devmsg(f'weird thing happened on {chan.name}')
+            # devmsg(f'weird thing happened on {chan.name}')
+            pass
         return
+
+    async def on_interaction(self, interaction):
+        devmsg(f'interaction: {interaction}')
 
     async def on_message_edit(self, before, after):
         # devmsg(f'a message was edited from {before} to {after}')
@@ -291,7 +307,10 @@ class IdleRPG(discord.Client):
         char = self.characters.find(after.author)
         pen = self.penalize(char, 'message', difference)
         dur = self.duration(pen)
-        await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for editing a message.")
+        await self.gamechan.send(
+            f"Penalty of {dur} added to {char.username}'s "
+            "timer for editing a message."
+        )
 
     # This could be helpful for message deletes eventually
     async def SKIPon_audit_log_entry_create(self, entry):
@@ -316,7 +335,9 @@ class IdleRPG(discord.Client):
         # At this point, we need to check to see if a mod did the delete
         # If not, then we penalize the player for the content length again
         guild = self.get_guild(message.author.guild.id)
-        async for entry in guild.audit_logs(action=discord.AuditLogAction.message_delete, limit=10):
+        async for entry in guild.audit_logs(
+            action=discord.AuditLogAction.message_delete, limit=10
+        ):
             self.dump_audit_log_entry(entry)
         length = len(message.content)
         # devmsg(f"message content: {message.content} with length {length}")
@@ -324,7 +345,10 @@ class IdleRPG(discord.Client):
         char = self.characters.find(message.author)
         pen = self.penalize(char, 'message', length)
         dur = self.duration(pen)
-        await self.gamechan.send(f"Penalty of {dur} added to {char.username}'s timer for deleting a message.")
+        await self.gamechan.send(
+            f"Penalty of {dur} added to {char.username}'s "
+            "timer for deleting a message."
+        )
 
     async def set_player_roles(self, member):
         """
@@ -419,15 +443,24 @@ class IdleRPG(discord.Client):
                 guild = member_before.guild.name
                 heshe = char.heshe(uppercase=1)
                 dur = self.duration(char.next_ttl)
-                await self.gamechan.send(f"{username}, the level {level} {charclass} is now online from **{guild}**. "
-                                         f"{heshe} reaches level {level + 1} in {dur}.")
+                guild_name = guild.name
+                if guild_name == 'Open R P G':
+                    guild_name = 'OpenRPG'
+                await self.gamechan.send(
+                    f"{username}, the level {level} {charclass} "
+                    f"is now online from **{guild_name}**. "
+                    f"{heshe} reaches level {level + 1} in {dur}."
+                )
             else:
                 if aft == 'offline':
                     char.online = 0
                     pen = self.penalize(char, 'status')
                     self.characters.update(char)
                     dur = self.duration(pen)
-                    await self.gamechan.send(f"Penalty of {dur} added to {username}'s timer for going offline.")
+                    await self.gamechan.send(
+                        f"Penalty of {dur} added to {username}'s "
+                        "timer for going offline."
+                    )
 
         if member_before.activity is not None and member_after.activity is not None and member_before.activity.name != member_after.activity.name:
             bef = member_before.activity
@@ -439,11 +472,13 @@ class IdleRPG(discord.Client):
             dur = self.duration(pen)
             devmsg(f"pen({pen}) dur({dur})")
 
-            # f"Penalty of {dur} added to {username}'s timer for activity change of '{bef}' to '{aft}'."
+            # f"Penalty of {dur} added to {username}'s timer
+            # for activity change of '{bef}' to '{aft}'."
             # Before is an ActivityType.watching
             # After can be 'None'
             await self.gamechan.send(
-                f"Penalty of {dur} added to {username}'s timer for activity change."
+                f"Penalty of {dur} added to {username}'s "
+                "timer for activity change."
             )
 
         if char.online == 0:
@@ -495,10 +530,12 @@ class IdleRPG(discord.Client):
 
     async def rpcheck(self):
         """
-        The meat and bones of the whole operation. Well, excluding the event penalties.
+        The meat and bones of the whole operation.
+        Well, excluding the event penalties.
         :return: None
         """
         # devmsg('start')
+        self_clock = self.self_clock  # avoid tons of lookups
         # Get a list of online users
         online = self.characters.online()
         online_good = self.characters.online(alignment='g')
@@ -511,23 +548,36 @@ class IdleRPG(discord.Client):
             devmsg('ended: nobody online')
             return
         # devmsg('checking randoms for general events')
-        if randint(0, int(24 * 86400 / self.self_clock)) < online_count: await self.monster_hunt()
-        if randint(0, int(20 * 86400 / self.self_clock)) < online_count: await self.hand_of_god()
-        if randint(0, int(9  * 86400 / self.self_clock)) < online_count: await self.group_battle()
-        if randint(0, int(9  * 86400 / self.self_clock)) < online_count: await self.team_battle()
-        if randint(0, int(8  * 86400 / self.self_clock)) < online_count: await self.calamity()
-        if randint(0, int(8  * 86400 / self.self_clock)) < online_count: await self.godsend()
-        if randint(0, int(8  * 14400 / self.self_clock)) < online_count: await self.celebrity_fight()
-        if randint(0, int(8  * 19400 / self.self_clock)) < online_count: await self.random_gold()
-        if randint(0, int(8  * 43200 / self.self_clock)) < online_count: await self.monster_attack()
+        if randint(0, int(24 * 86400 / self_clock)) < online_count:
+            await self.monster_hunt()
+        if randint(0, int(20 * 86400 / self_clock)) < online_count:
+            await self.hand_of_god()
+        if randint(0, int(9  * 86400 / self_clock)) < online_count:
+            await self.group_battle()
+        if randint(0, int(9  * 86400 / self_clock)) < online_count:
+            await self.team_battle()
+        if randint(0, int(8  * 86400 / self_clock)) < online_count:
+            await self.calamity()
+        if randint(0, int(8  * 86400 / self_clock)) < online_count:
+            await self.godsend()
+        if randint(0, int(8  * 14400 / self_clock)) < online_count:
+            await self.celebrity_fight()
+        if randint(0, int(8  * 19400 / self_clock)) < online_count:
+            await self.random_gold()
+        if randint(0, int(8  * 43200 / self_clock)) < online_count:
+            await self.monster_attack()
 
         # Do the following if at least 15% of the characters are online
         # devmsg('checking randoms for good/evil events')
         if online_count / len(self.characters.chars) > .15:
-            if randint(0, int(8  * 86400 / self.self_clock)) < len(online_good): await self.random_steal()
-            if randint(0, int(12 * 86400 / self.self_clock)) < len(online_evil): await self.evilness()
-            if randint(0, int(12 * 86400 / self.self_clock)) < len(online_good): await self.goodness()
-            if randint(0, int(20 * 86400 / self.self_clock)) < len(online_good): await self.godsend()
+            if randint(0, int(8  * 86400 / self_clock)) < len(online_good):
+                await self.random_steal()
+            if randint(0, int(12 * 86400 / self_clock)) < len(online_evil):
+                await self.evilness()
+            if randint(0, int(12 * 86400 / self_clock)) < len(online_good):
+                await self.goodness()
+            if randint(0, int(20 * 86400 / self_clock)) < len(online_good):
+                await self.godsend()
 
         # Always do the following
         await self.moveplayers()
@@ -1490,7 +1540,7 @@ class IdleRPG(discord.Client):
             if pen > self.limitpen:
                 pen = self.limitpen
             # TODO: pen_nick is legacy from IRC. Make new counters for pen_status and pen_activity
-            char.pen_nick += pen
+            char.pen_logout += pen
             char.next_ttl += pen
             self.characters.update(char)
             return pen
